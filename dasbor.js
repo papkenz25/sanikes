@@ -99,7 +99,7 @@
     el.innerHTML = '<div id="dasbor-root">' + html + '</div>';
     $('dasbor-root').onclick = function (e) {
       var t = e.target.closest ? e.target.closest('[data-buka]') : null;
-      if (t && App.tabs[t.dataset.buka]) App.tabs[t.dataset.buka](el);
+      if (t && App.tabs[t.dataset.buka]) { App.tabs[t.dataset.buka](el); App.kembali('Dasbor', function () { bukaTab('dasbor'); }); window.scrollTo(0, 0); }
     };
   };
 })();

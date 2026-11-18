@@ -54,8 +54,11 @@
 
   var KOTAK = 'padding:20px 12px;min-height:90px';
 
-  function pindah(nama) {
+  function pindah(nama, sub, el) {
     var isi = document.getElementById('isi');
+    if (sub && !document.querySelector('.bawah [data-tab="' + nama + '"]')) {
+      setTimeout(function () { App.kembali(SUB[sub].judul, function () { document.querySelector('.bawah [data-tab="modul"]').classList.add('aktif'); tampil(el, sub); }); }, 0);
+    }
     var tombol = document.querySelector('.bawah [data-tab="' + nama + '"]');
     if (tombol) tombol.click();
     else if (App.tabs[nama]) App.tabs[nama](isi);
@@ -82,7 +85,7 @@
       if (!b) return;
       if (b.dataset.m) tampil(el, b.dataset.m);
       else if (b.dataset.back) tampil(el, null);
-      else if (b.dataset.go) pindah(b.dataset.go);
+      else if (b.dataset.go) pindah(b.dataset.go, sub, el);
     };
   }
 

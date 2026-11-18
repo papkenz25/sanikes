@@ -68,7 +68,23 @@ async function masukApp(user) {
   bukaTab('dasbor');
 }
 
+App.kembali = function (label, fn) {
+  var w = $('kembali-wrap');
+  if (!w) {
+    w = document.createElement('div');
+    w.id = 'kembali-wrap';
+    w.className = 'noprint';
+    w.innerHTML = '<button type="button" class="kecil" id="kembali-btn"></button>';
+    $('isi').parentNode.insertBefore(w, $('isi'));
+  }
+  if (!label) { w.hidden = true; return; }
+  $('kembali-btn').textContent = '← ' + label;
+  w.hidden = false;
+  $('kembali-btn').onclick = function () { w.hidden = true; fn(); window.scrollTo(0, 0); };
+};
+
 function bukaTab(nama) {
+  App.kembali(null);
   App.tab = nama;
   document.querySelectorAll('.bawah button').forEach(function (b) {
     b.classList.toggle('aktif', b.dataset.tab === nama);
@@ -116,7 +132,19 @@ async function init() {
     $('pesan-login').textContent = 'config.js belum diisi.';
     return;
   }
+  var pulih = /type=recovery/.test(location.hash);
   App.db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+
+  $('tombol-lupa').addEventListener('click', async function () {
+    var email = $('email').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('pesan-login').textContent = 'Isi email Anda dulu di kolom Email, lalu tekan Lupa kata sandi lagi.'; return; }
+    this.disabled = true;
+    var r = await App.db.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+    this.disabled = false;
+    $('pesan-login').textContent = r.error
+      ? 'Gagal mengirim email: ' + r.error.message
+      : 'Bila email terdaftar, tautan atur ulang kata sandi sudah dikirim. Buka email lalu tekan tautannya.';
+  });
 
   $('form-login').addEventListener('submit', async function (e) {
     e.preventDefault();
@@ -138,6 +166,31 @@ async function init() {
   });
 
   var s = await App.db.auth.getSession();
+  if (s.data.session && pulih) { formPulih(s.data.session.user); return; }
   if (s.data.session) { masukApp(s.data.session.user); } else { tampil('login'); }
+}
+
+function formPulih(user) {
+  tampil('login');
+  $('form-login').hidden = true;
+  var d = document.createElement('div');
+  d.innerHTML = '<p><b>Atur kata sandi baru</b><br><span class="muted">' + esc(user.email || '') + '</span></p>' +
+    '<label>Kata sandi baru (minimal 8 karakter)</label><input id="ps-1" type="password" autocomplete="new-password">' +
+    '<label>Ulangi kata sandi baru</label><input id="ps-2" type="password" autocomplete="new-password">' +
+    '<button type="button" id="ps-simpan">Simpan dan masuk</button><div class="pesan" id="ps-pesan"></div>';
+  $('form-login').parentNode.appendChild(d);
+  $('ps-simpan').onclick = async function () {
+    var a = $('ps-1').value, b = $('ps-2').value;
+    if (a.length < 8) { $('ps-pesan').textContent = 'Kata sandi minimal 8 karakter.'; return; }
+    if (a !== b) { $('ps-pesan').textContent = 'Kedua kata sandi tidak sama.'; return; }
+    this.disabled = true;
+    var r = await App.db.auth.updateUser({ password: a });
+    this.disabled = false;
+    if (r.error) { $('ps-pesan').textContent = 'Gagal: ' + r.error.message; return; }
+    history.replaceState(null, '', location.pathname);
+    d.remove();
+    $('form-login').hidden = false;
+    masukApp(user);
+  };
 }
 init();

@@ -77,7 +77,8 @@
       return '<div class="baris"' + (o.aktif ? '' : ' style="opacity:.6"') + '><b>' + esc(o.nama || '-') + '</b>' + (diri ? ' <span class="muted">(Anda)</span>' : '') +
         '<br>' + esc(o.email || '-') + ' · ' + esc(namaPeran(o.peran)) + (o.aktif ? '' : ' · <span class="lewat">nonaktif</span>') +
         (o.nip_nik ? '<br><span class="muted">NIP/NIK: ' + esc(o.nip_nik) + '</span>' : '') +
-        '<div data-pbox="' + o.id + '"><button type="button" style="' + G1 + '" data-ubah="' + o.id + '">Ubah</button></div></div>';
+        '<div data-pbox="' + o.id + '"><button type="button" style="' + G1 + '" data-ubah="' + o.id + '">Ubah</button>' +
+        (diri ? '' : '<button type="button" style="' + G1 + '" data-sandi="' + o.id + '">Atur ulang sandi</button>') + '</div></div>';
     }).join('') : '<p class="muted">Belum ada pengguna.</p>') + '</div>';
     el.innerHTML = html;
 
@@ -120,12 +121,26 @@
     $('pg-daftar').onclick = async function (e) {
       var b = e.target.closest ? e.target.closest('button') : null;
       if (!b) return;
-      var id = b.dataset.ubah || b.dataset.simpan || b.dataset.batal;
+      var id = b.dataset.ubah || b.dataset.simpan || b.dataset.batal || b.dataset.sandi || b.dataset.simpansandi;
       var o = orang.filter(function (x) { return x.id === id; })[0];
       var w = document.querySelector('[data-pbox="' + id + '"]');
       if (!o || !w) return;
       var diri = o.id === App.profil.id;
-      if (b.dataset.ubah) {
+      if (b.dataset.sandi) {
+        w.innerHTML = '<div style="border:1px solid #ccc;border-radius:10px;padding:10px;margin-top:8px">' +
+          '<p class="muted">Kata sandi pengguna tersimpan terenkripsi, jadi tidak bisa dilihat siapa pun. Buat kata sandi sementara baru, berikan kepada ' + esc(o.nama || 'pengguna') + ', lalu minta ia menggantinya sendiri di menu Akun.</p>' +
+          '<label>Kata sandi sementara baru (minimal 8 karakter)</label><input id="pu-sandi" type="text" autocomplete="off">' +
+          '<button type="button" data-simpansandi="' + id + '">Simpan kata sandi</button><button type="button" style="' + G1 + '" data-batal="' + id + '">Batal</button>' +
+          '<div class="pesan" id="pu-pesan"></div></div>';
+      } else if (b.dataset.simpansandi) {
+        var sd = $('pu-sandi').value;
+        if (sd.length < 8) { $('pu-pesan').textContent = 'Minimal 8 karakter.'; return; }
+        b.disabled = true;
+        var rs = await App.db.rpc('atur_sandi_pengguna', { p_id: id, p_sandi: sd });
+        b.disabled = false;
+        if (rs.error) { $('pu-pesan').textContent = 'Gagal: ' + rs.error.message; return; }
+        App.tabs.pengguna(el, 'Kata sandi ' + (o.nama || 'pengguna') + ' sudah diganti. Berikan kata sandi sementara itu kepadanya secara langsung.');
+      } else if (b.dataset.ubah) {
         w.innerHTML = '<div style="border:1px solid #ccc;border-radius:10px;padding:10px;margin-top:8px">' +
           '<label>Nama</label><input id="pu-nama" value="' + esc(o.nama || '') + '">' +
           '<label>NIP/NIK</label><input id="pu-nip" value="' + esc(o.nip_nik || '') + '">' +

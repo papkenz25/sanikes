@@ -14,6 +14,7 @@
     b.textContent = 'Akun';
     b.addEventListener('click', function () {
       App.tab = 'akun';
+      App.kembali(null);
       document.querySelectorAll('.bawah button').forEach(function (x) { x.classList.remove('aktif'); });
       App.tabs.akun(document.getElementById('isi'));
       window.scrollTo(0, 0);
@@ -55,7 +56,7 @@
       '<label>Kata sandi saat ini</label><input type="password" id="ak-sandi-email" autocomplete="current-password">' +
       '<button type="button" id="ak-simpan-email">Kirim konfirmasi email baru</button><div class="pesan" id="ak-pesan-email"></div>';
 
-    if ($('ak-pengguna')) $('ak-pengguna').onclick = function () { App.tabs.pengguna(el); };
+    if ($('ak-pengguna')) $('ak-pengguna').onclick = function () { App.tabs.pengguna(el); App.kembali('Akun', function () { App.tabs.akun(el); }); window.scrollTo(0, 0); };
     $('ak-simpan-nama').addEventListener('click', async function () {
       var nama = $('ak-nama').value.trim(), ps = $('ak-pesan-nama');
       ps.style.color = '';
