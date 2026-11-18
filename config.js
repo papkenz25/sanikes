@@ -1,4 +1,4 @@
 window.SANIKES_CONFIG = {
-  SUPABASE_URL: "ISI_PROJECT_URL_DI_SINI",
-  SUPABASE_KEY: "ISI_PUBLISHABLE_KEY_DI_SINI"
+  SUPABASE_URL: "https://cqupcnmeiuqlqxyprrsf.supabase.co",
+  SUPABASE_KEY: "sb_publishable_WqP1tBOefLZeWXN33prWmg_Nhl2gHJF"
 };
