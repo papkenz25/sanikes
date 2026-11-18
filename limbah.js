@@ -1,0 +1,196 @@
+(function () {
+  var WARNA = { kuning: '#F2C200', cokelat: '#8B5A2B', ungu: '#7B3FA0', merah: '#D32F2F', hijau: '#2E7D32' };
+  var cache = {};
+  var S = { master: [], items: [], tps: [], kode: null, token: 0 };
+
+  function pilihTerbaru(rows, hari) {
+    var m = {};
+    rows.forEach(function (r) {
+      if (r.berlaku_mulai > hari) return;
+      if (!m[r.kode] || r.berlaku_mulai > m[r.kode].berlaku_mulai) m[r.kode] = r;
+    });
+    return Object.keys(m).sort().map(function (k) { return m[k]; });
+  }
+
+  async function jumlah30(kode, tgl) {
+    var key = kode + '|' + tgl;
+    if (cache[key] !== undefined) return cache[key];
+    var d = new Date(tgl + 'T00:00:00');
+    d.setDate(d.getDate() - 29);
+    var r = await App.db.from('limbah_harian').select('berat_kg')
+      .eq('kode_limbah', kode).gte('tanggal', tglLokal(d)).lte('tanggal', tgl);
+    var s = 0;
+    (r.data || []).forEach(function (x) { s += Number(x.berat_kg); });
+    cache[key] = s;
+    return s;
+  }
+
+  async function hitungBatas(row, berat, tgl, jam, suhu) {
+    var hari = null, ket = '';
+    if (row.penentu_batas === 'suhu') {
+      hari = suhu === 'ruang' ? row.batas_suhu_ruang_hari : (suhu === 'pendingin' ? row.batas_pendingin_hari : row.batas_beku_hari);
+      ket = 'Penyimpanan suhu ' + suhu;
+    } else if (row.penentu_batas === 'jumlah') {
+      var total = (await jumlah30(row.kode, tgl)) + berat;
+      var rata = total / 30;
+      var ambang = Number(row.ambang_kg_per_hari || 50);
+      hari = rata >= ambang ? row.batas_hari_ambang_atau_lebih : row.batas_hari_di_bawah_ambang;
+      ket = 'Rata-rata timbulan ' + rata.toFixed(2) + ' kg/hari (ambang ' + ambang + ' kg)';
+    }
+    if (hari === null || hari === undefined) return { iso: null, hari: null, ket: ket };
+    hari = Number(hari);
+    var mulai = new Date(tgl + 'T' + (jam || '00:00'));
+    return { iso: new Date(mulai.getTime() + hari * 86400000).toISOString(), hari: hari, ket: ket };
+  }
+
+  async function segarkanBatas() {
+    var box = $('l-batas');
+    var berat = parseFloat($('l-berat').value);
+    if (!S.kode || !(berat > 0)) { box.className = 'info'; box.textContent = 'Pilih kode limbah dan isi berat untuk melihat batas simpan.'; return; }
+    var tok = ++S.token;
+    var h = await hitungBatas(S.kode, berat, $('l-tgl').value, $('l-jam').value, $('l-suhu').value);
+    if (tok !== S.token) return;
+    if (!h.iso) {
+      box.className = 'info waspada';
+      box.textContent = 'Batas simpan belum ditetapkan untuk kode ini (perlu verifikasi aturan). Catatan tetap bisa disimpan.';
+    } else {
+      box.className = 'info';
+      box.innerHTML = 'Batas simpan: <b>' + h.hari + ' hari</b> (sampai ' + fmtWaktu(h.iso) + ')<br><span class="muted">' + esc(h.ket) + '</span>';
+    }
+  }
+
+  function pilihKode(kode) {
+    S.kode = S.master.filter(function (m) { return m.kode === kode; })[0] || null;
+    document.querySelectorAll('#l-chips .chip').forEach(function (c) { c.classList.toggle('aktif', c.dataset.kode === kode); });
+    var m = S.kode;
+    if (!m) return;
+    var h = '<b>' + esc(m.nama) + '</b><br>Contoh: ' + esc(m.contoh_barang || '-');
+    h += '<br>Wadah: ' + esc(m.jenis_wadah || '-') + (m.warna_kemasan ? ' (' + esc(m.warna_kemasan) + ')' : '');
+    h += '<br>Simbol: ' + esc(m.simbol || '-');
+    if (m.status_verifikasi !== 'terverifikasi') h += '<br><b>Perhatian:</b> kode ini belum diverifikasi dengan aturan resmi.';
+    $('l-info-kode').className = m.status_verifikasi !== 'terverifikasi' ? 'info waspada' : 'info';
+    $('l-info-kode').innerHTML = h;
+    $('l-daftar-nama').innerHTML = S.items.filter(function (i) { return i.kode_limbah === kode; })
+      .map(function (i) { return '<option value="' + esc(i.nama_item) + '">'; }).join('');
+    segarkanBatas();
+  }
+
+  async function muatDaftar() {
+    var r = await App.db.from('limbah_harian')
+      .select('jam, kode_limbah, nama_limbah, berat_kg, batas_simpan, ruangan(nama), tps(nama)')
+      .eq('tanggal', tglLokal(new Date())).order('dibuat', { ascending: false });
+    var box = $('l-daftar');
+    if (r.error) { box.innerHTML = '<p class="muted">Gagal memuat catatan.</p>'; return; }
+    if (!r.data.length) { box.innerHTML = '<p class="muted">Belum ada catatan hari ini.</p>'; return; }
+    var total = 0;
+    var html = r.data.map(function (x) {
+      total += Number(x.berat_kg);
+      return '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + Number(x.berat_kg).toFixed(3) + ' kg · ' + esc((x.jam || '').slice(0, 5)) +
+        '<br>' + esc(x.nama_limbah || '') + '<br><span class="muted">' + esc(x.ruangan ? x.ruangan.nama : '-') + ' → ' + esc(x.tps ? x.tps.nama : '-') + '</span></div>';
+    }).join('');
+    box.innerHTML = '<p class="ok">Total hari ini: ' + total.toFixed(3) + ' kg</p>' + html;
+  }
+
+  App.tabs.catat = async function (el) {
+    var peran = App.profil.peran;
+    if (['admin_fasyankes', 'petugas_kesling', 'petugas_ruangan'].indexOf(peran) < 0) {
+      el.innerHTML = '<div class="info">Peran Anda hanya bisa melihat data, tidak bisa mencatat.</div>';
+      return;
+    }
+    el.innerHTML = '<p class="muted">Memuat...</p>';
+    var hari = tglLokal(new Date());
+    var r = await Promise.all([
+      App.db.from('master_limbah').select('*').eq('aktif', true),
+      App.db.from('ruangan').select('id, nama').eq('aktif', true).order('nama'),
+      App.db.from('tps').select('id, nama, suhu').eq('aktif', true).order('nama'),
+      App.db.from('limbah_item').select('kode_limbah, nama_item').eq('aktif', true).order('nama_item')
+    ]);
+    if (r[0].error || r[1].error || r[2].error || r[3].error) {
+      el.innerHTML = '<div class="info waspada">Gagal memuat data. Coba muat ulang halaman.</div>';
+      return;
+    }
+    S.master = pilihTerbaru(r[0].data, hari);
+    S.items = r[3].data;
+    S.tps = r[2].data;
+    S.kode = null;
+    if (!r[1].data.length || !S.tps.length) {
+      el.innerHTML = '<div class="info waspada">Ruangan atau TPS belum diisi.</div>';
+      return;
+    }
+    var opsiRuang = r[1].data.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.nama) + '</option>'; }).join('');
+    var opsiTps = S.tps.map(function (x) { return '<option value="' + esc(x.id) + '">' + esc(x.nama) + '</option>'; }).join('');
+    var chips = S.master.map(function (m) {
+      return '<button type="button" class="chip" data-kode="' + esc(m.kode) + '"><span class="titik" style="background:' + (WARNA[m.warna_kemasan] || '#ccc') + '"></span>' + esc(m.kode) + '</button>';
+    }).join('');
+
+    el.innerHTML =
+      '<h3 style="margin-top:0">Catat limbah B3</h3>' +
+      '<form id="f-limbah">' +
+      '<label>Tanggal</label><input type="date" id="l-tgl" value="' + hari + '" required>' +
+      '<label>Jam</label><input type="time" id="l-jam" value="' + jamLokal(new Date()) + '" required>' +
+      '<label>Ruangan asal</label><select id="l-ruangan" required>' + opsiRuang + '</select>' +
+      '<label>Kode limbah</label><div class="chips" id="l-chips">' + chips + '</div>' +
+      '<div id="l-info-kode" class="info">Pilih kode limbah di atas.</div>' +
+      '<label>Nama barang (opsional)</label><input id="l-nama" list="l-daftar-nama" autocomplete="off"><datalist id="l-daftar-nama"></datalist>' +
+      '<label>Berat (kg)</label><input type="number" id="l-berat" step="0.001" min="0.001" inputmode="decimal" required>' +
+      '<label>TPS tujuan</label><select id="l-tps" required>' + opsiTps + '</select>' +
+      '<label>Suhu penyimpanan</label><select id="l-suhu"><option value="ruang">Suhu ruang</option><option value="pendingin">Pendingin (0-5 C)</option><option value="beku">Beku (0 C atau kurang)</option></select>' +
+      '<label>ID kantong / safety box (opsional)</label><input id="l-kantong">' +
+      '<div id="l-batas" class="info">Pilih kode limbah dan isi berat untuk melihat batas simpan.</div>' +
+      '<button type="submit" id="l-simpan">Simpan</button>' +
+      '<div class="pesan" id="l-pesan"></div>' +
+      '</form>' +
+      '<h3>Catatan hari ini</h3><div id="l-daftar"></div>';
+
+    function setSuhuDariTps() {
+      var t = S.tps.filter(function (x) { return x.id === $('l-tps').value; })[0];
+      if (t && t.suhu) $('l-suhu').value = t.suhu;
+    }
+    setSuhuDariTps();
+
+    $('l-chips').addEventListener('click', function (e) {
+      var c = e.target.closest('.chip');
+      if (c) pilihKode(c.dataset.kode);
+    });
+    $('l-tps').addEventListener('change', function () { setSuhuDariTps(); segarkanBatas(); });
+    ['l-berat', 'l-suhu', 'l-tgl', 'l-jam'].forEach(function (id) {
+      $(id).addEventListener('input', segarkanBatas);
+    });
+
+    $('f-limbah').addEventListener('submit', async function (e) {
+      e.preventDefault();
+      var pesan = $('l-pesan');
+      pesan.style.color = '';
+      pesan.textContent = '';
+      if (!S.kode) { pesan.textContent = 'Pilih kode limbah dulu.'; return; }
+      var berat = parseFloat($('l-berat').value);
+      if (!(berat > 0)) { pesan.textContent = 'Isi berat dengan benar.'; return; }
+      $('l-simpan').disabled = true;
+      var h = await hitungBatas(S.kode, berat, $('l-tgl').value, $('l-jam').value, $('l-suhu').value);
+      var res = await App.db.from('limbah_harian').insert({
+        tanggal: $('l-tgl').value,
+        jam: $('l-jam').value,
+        ruangan_id: $('l-ruangan').value,
+        kode_limbah: S.kode.kode,
+        nama_limbah: $('l-nama').value.trim() || S.kode.nama,
+        berat_kg: berat,
+        tps_id: $('l-tps').value,
+        suhu: $('l-suhu').value,
+        batas_simpan: h.iso,
+        id_kantong: $('l-kantong').value.trim() || null
+      });
+      $('l-simpan').disabled = false;
+      if (res.error) { pesan.textContent = 'Gagal menyimpan: ' + res.error.message; return; }
+      cache = {};
+      pesan.style.color = '#0F6E5C';
+      pesan.textContent = 'Tersimpan.' + (h.iso ? ' Batas simpan: ' + fmtWaktu(h.iso) : '');
+      $('l-berat').value = '';
+      $('l-nama').value = '';
+      $('l-kantong').value = '';
+      segarkanBatas();
+      muatDaftar();
+    });
+
+    muatDaftar();
+  };
+})();
