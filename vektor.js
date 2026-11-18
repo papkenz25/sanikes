@@ -52,7 +52,7 @@
       '<label id="vk-lbl">Hasil pengamatan (angka)</label><input type="number" step="any" inputmode="decimal" id="vk-nilai"><div id="vk-st"></div>' +
       '<label>Tindakan / keterangan</label><input id="vk-tin" placeholder="mis. fogging, pasang perangkap, ganti umpan">' +
       '<button type="button" id="vk-simpan">Simpan</button><div class="pesan" id="vk-pesan"></div>' : '';
-    el.innerHTML = '<h3 style="margin-top:0">Pengamatan vektor</h3>' + form + '<h3>Catatan terbaru</h3><div id="vk-daftar"></div>';
+    el.innerHTML = '<h3 style="margin-top:0">Pengamatan vektor</h3>' + form + '<div id="tl-box"></div><h3>Catatan terbaru</h3><div id="vk-daftar"></div>';
 
     async function daftar() {
       var q = await App.db.from('vektor').select('*').order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(30);
@@ -83,7 +83,7 @@
         $('vk-abj').style.display = abj ? 'block' : 'none';
         $('vk-nilai').readOnly = abj;
         $('vk-lbl').textContent = abj ? 'ABJ (%), dihitung otomatis' : 'Hasil pengamatan (angka)';
-        if (abj) hitung(); 
+        if (abj) hitung();
         $('vk-batas').textContent = b ? 'Batas: ' + batasTeks(b) + ' (' + (b.satuan || '') + ')' : 'Tidak ada baku mutu untuk jenis ini.';
         $('vk-st').innerHTML = lencana(status(b, $('vk-nilai').value), b);
       }
@@ -93,24 +93,36 @@
       $('vk-pos').addEventListener('input', segar);
       $('vk-simpan').addEventListener('click', async function () {
         var tgl = $('vk-tgl').value, lok = $('vk-lok').value.trim(), nilai = $('vk-nilai').value;
-        var abj = adalahAbj($('vk-jenis').value);
+        var pilih = $('vk-jenis').value, abj = adalahAbj(pilih);
         if (!tgl || !lok || nilai === '') {
           $('vk-pesan').textContent = abj ? 'Tanggal, lokasi, jumlah diperiksa, dan jumlah berjentik wajib diisi.' : 'Tanggal, lokasi, dan hasil wajib diisi.';
           return;
         }
-        var jenis = $('vk-jenis').value === '__lain' ? 'Lainnya' : $('vk-jenis').value;
+        var jenis = pilih === '__lain' ? 'Lainnya' : pilih;
+        var per = Number($('vk-per').value), pos = Number($('vk-pos').value);
         var s = await App.db.from('vektor').insert({
           tanggal: tgl, lokasi: lok, jenis_vektor: jenis, jumlah_temuan: Number(nilai),
-          jumlah_diperiksa: abj ? Number($('vk-per').value) : null,
-          jumlah_positif: abj ? Number($('vk-pos').value) : null,
+          jumlah_diperiksa: abj ? per : null,
+          jumlah_positif: abj ? pos : null,
           tindakan: $('vk-tin').value.trim() || null
         });
         if (s.error) { $('vk-pesan').textContent = 'Gagal menyimpan: ' + (s.error.message || 'coba lagi'); return; }
+        var b = peta[pilih];
+        var tidak = b && status(b, nilai) === 'tidak_memenuhi';
+        var er = null;
+        if (tidak && window.TL) {
+          er = await TL.catat([{
+            tanggal: tgl, kategori: 'vektor', sumber: 'vektor', lokasi: lok, parameter: jenis,
+            hasil: abj ? angka(Number(nilai)) + '% (' + (per - pos) + ' dari ' + per + ' bebas jentik)' : angka(Number(nilai)),
+            uraian: (b.min != null ? 'di bawah baku mutu' : 'melebihi baku mutu') + ' (batas ' + batasTeks(b) + ')'
+          }]);
+        }
         await App.tabs.vektor_catat(el);
-        $('vk-pesan').textContent = 'Tersimpan.';
+        $('vk-pesan').textContent = tidak && window.TL ? (er ? 'Tersimpan, tetapi temuan gagal dicatat.' : 'Tersimpan. Tidak memenuhi baku mutu dan dicatat sebagai temuan, lihat saran di bawah.') : 'Tersimpan.';
       });
       segar();
     }
     daftar();
+    if (window.TL && $('tl-box')) TL.panel($('tl-box'), 'vektor');
   };
 })();
