@@ -7,7 +7,8 @@
     ruangan: { tabel: 'ruangan', judul: 'Ruangan', urut: 'nama', kolom: [
       { k: 'nama', l: 'Nama ruangan', t: 'text', w: true },
       { k: 'jenis', l: 'Jenis (opsional)', t: 'text' },
-      { k: 'zona_risiko', l: 'Zona risiko (opsional)', t: 'select', o: ZONA }
+      { k: 'zona_risiko', l: 'Zona risiko (opsional)', t: 'select', o: ZONA },
+      { k: 'kategori_udara', l: 'Kategori ruang untuk baku mutu udara (opsional)', t: 'select', o: [['operasi','Ruang operasi'],['bersalin','Ruang bersalin'],['perawatan','Ruang perawatan / pemulihan'],['bayi','Perawatan bayi baru lahir'],['icu','ICU'],['jenazah','Jenazah / autopsi'],['penginderaan','Penginderaan medis'],['lab','Laboratorium'],['radiologi','Radiologi'],['sterilisasi','Sterilisasi'],['dapur','Dapur'],['igd','Gawat darurat'],['administrasi','Administrasi / kantor'],['luka_bakar','Ruang luka bakar'],['umum','Ruang umum lainnya']] }
     ] },
     tps: { tabel: 'tps', judul: 'TPS', urut: 'nama', kolom: [
       { k: 'nama', l: 'Nama TPS', t: 'text', w: true },
