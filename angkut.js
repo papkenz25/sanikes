@@ -16,8 +16,8 @@
       per[c.dataset.kode] = (per[c.dataset.kode] || 0) + b;
       total += b;
     });
-    var teks = Object.keys(per).sort().map(function (k) { return k + ': ' + per[k].toFixed(3) + ' kg'; }).join(' · ');
-    $('a-ringkas').innerHTML = total > 0 ? 'Dipilih: <b>' + total.toFixed(3) + ' kg</b><br>' + esc(teks) : 'Belum ada limbah dipilih.';
+    var teks = Object.keys(per).sort().map(function (k) { return k + ': ' + fmtBerat(per[k]); }).join(' · ');
+    $('a-ringkas').innerHTML = total > 0 ? 'Dipilih: <b>' + fmtBerat(total) + '</b><br>' + esc(teks) : 'Belum ada limbah dipilih.';
   }
 
   App.tabs.angkut = async function (el) {
@@ -66,12 +66,12 @@
       urut.forEach(function (kode) {
         var tot = 0;
         grup[kode].forEach(function (x) { tot += Number(x.berat_kg); });
-        html += '<div class="info"><b>' + esc(kode) + '</b> · stok ' + tot.toFixed(3) + ' kg ' +
+        html += '<div class="info"><b>' + esc(kode) + '</b> · stok ' + fmtBerat(tot) + ' ' +
           '<button type="button" class="chip" style="margin-top:8px" data-semua="' + esc(kode) + '">Pilih semua</button></div>';
         grup[kode].forEach(function (x) {
           html += '<div class="baris"><label style="display:flex;gap:10px;align-items:flex-start;margin:0;font-weight:400">' +
             '<input type="checkbox" class="a-cek" style="width:auto;margin-top:3px" value="' + esc(x.id) + '" data-kode="' + esc(kode) + '" data-berat="' + Number(x.berat_kg) + '">' +
-            '<span><b>' + Number(x.berat_kg).toFixed(3) + ' kg</b> · ' + esc(x.tanggal) + ' ' + esc((x.jam || '').slice(0, 5)) +
+            '<span><b>' + fmtBerat(x.berat_kg) + '</b> · ' + esc(x.tanggal) + ' ' + esc((x.jam || '').slice(0, 5)) +
             '<br>' + esc(x.nama_limbah || '') + (x.id_kantong ? ' · ' + esc(x.id_kantong) : '') +
             '<br><span class="muted">' + esc(x.ruangan ? x.ruangan.nama : '-') + ' → ' + esc(x.tps ? x.tps.nama : '-') + '</span>' +
             statusBatas(x.batas_simpan) + '</span></label></div>';
@@ -86,7 +86,7 @@
     html += '<h3>Riwayat pengangkutan</h3>';
     if (!r[2].data.length) html += '<p class="muted">Belum ada pengangkutan.</p>';
     r[2].data.forEach(function (x) {
-      html += '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + Number(x.berat_kg).toFixed(3) + ' kg · ' + esc(x.tanggal) +
+      html += '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + fmtBerat(x.berat_kg) + ' · ' + esc(x.tanggal) +
         '<br>Manifest: ' + esc(x.no_manifest || '-') + '<br><span class="muted">' + esc(x.vendor ? x.vendor.nama : '-') + '</span></div>';
     });
     el.innerHTML = html;
