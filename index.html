@@ -6,111 +6,42 @@
 <title>SANIKES by Papkenz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-  :root { --hijau:#0F6E5C; --hijau-muda:#E6F3F0; --teks:#17302B; --abu:#6B7C78; --merah:#B3261E; }
-  * { box-sizing:border-box; }
-  [hidden] { display:none !important; }
-  body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center;
-         background:var(--hijau-muda); font-family:'Plus Jakarta Sans',system-ui,sans-serif; color:var(--teks); padding:20px; }
-  .kartu { width:100%; max-width:380px; background:#fff; border-radius:20px; padding:28px 24px;
-           box-shadow:0 8px 30px rgba(15,110,92,.15); }
-  .logo { font-weight:800; font-size:28px; color:var(--hijau); letter-spacing:.5px; margin:0; }
-  .sub { color:var(--abu); font-size:13px; margin:4px 0 22px; }
-  label { display:block; font-size:13px; font-weight:600; margin:14px 0 6px; }
-  input { width:100%; padding:13px 14px; border:1.5px solid #D5E2DF; border-radius:12px; font:inherit; font-size:16px; }
-  input:focus { outline:none; border-color:var(--hijau); }
-  button { width:100%; margin-top:20px; padding:14px; border:0; border-radius:12px; background:var(--hijau);
-           color:#fff; font:inherit; font-weight:800; font-size:16px; cursor:pointer; }
-  button.sekunder { background:#fff; color:var(--hijau); border:1.5px solid var(--hijau); margin-top:12px; }
-  button:disabled { opacity:.6; }
-  .pesan { margin-top:14px; font-size:13px; color:var(--merah); min-height:18px; }
-  .info { background:var(--hijau-muda); border-radius:12px; padding:14px; margin:12px 0; font-size:14px; line-height:1.6; }
-  .info b { color:var(--hijau); }
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<main class="kartu" id="layar-login">
-  <p class="logo">SANIKES</p>
-  <p class="sub">by Papkenz · Input sekali, semua laporan</p>
-  <form id="form-login">
-    <label for="email">Email</label>
-    <input id="email" type="email" autocomplete="username" required>
-    <label for="pin">PIN / Kata sandi</label>
-    <input id="pin" type="password" autocomplete="current-password" required>
-    <button type="submit" id="tombol-masuk">Masuk</button>
-    <div class="pesan" id="pesan-login"></div>
-  </form>
-</main>
+<div id="layar-login" class="tengah" hidden>
+  <main class="kartu">
+    <p class="logo">SANIKES</p>
+    <p class="sub">by Papkenz · Input sekali, semua laporan</p>
+    <form id="form-login">
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="username" required>
+      <label for="pin">PIN / Kata sandi</label>
+      <input id="pin" type="password" autocomplete="current-password" required>
+      <button type="submit" id="tombol-masuk">Masuk</button>
+      <div class="pesan" id="pesan-login"></div>
+    </form>
+  </main>
+</div>
 
-<main class="kartu" id="layar-dasbor" hidden>
-  <p class="logo">SANIKES</p>
-  <p class="sub">Koneksi berhasil</p>
-  <div class="info">
-    Halo, <b id="nama-pengguna">-</b><br>
-    Peran: <b id="peran-pengguna">-</b><br>
-    Fasyankes: <b id="nama-fasyankes">-</b><br>
-    Master limbah: <b id="jumlah-limbah">-</b>
-  </div>
-  <button class="sekunder" id="tombol-keluar">Keluar</button>
-  <div class="pesan" id="pesan-dasbor"></div>
-</main>
+<div id="layar-app" hidden>
+  <header class="atas">
+    <div><b>SANIKES</b><small id="info-fasyankes"></small></div>
+    <button class="kecil" id="tombol-keluar">Keluar</button>
+  </header>
+  <main id="isi"></main>
+  <nav class="bawah">
+    <button data-tab="dasbor" class="aktif">Dasbor</button>
+    <button data-tab="catat">Catat</button>
+    <button data-tab="laporan">Laporan</button>
+    <button data-tab="data">Data</button>
+  </nav>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script>
-  var cfg = window.SANIKES_CONFIG || {};
-  var db = null;
-  var $ = function (id) { return document.getElementById(id); };
-
-  function tampil(layar) {
-    $('layar-login').hidden = layar !== 'login';
-    $('layar-dasbor').hidden = layar !== 'dasbor';
-  }
-
-  if (!cfg.SUPABASE_URL || cfg.SUPABASE_URL.indexOf('ISI_') === 0) {
-    $('pesan-login').textContent = 'config.js belum diisi dengan URL dan key Supabase.';
-  } else {
-    db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
-    mulai();
-  }
-
-  async function muatDasbor(user) {
-    tampil('dasbor');
-    $('pesan-dasbor').textContent = '';
-    var p = await db.from('profil').select('nama, peran, fasyankes(nama)').eq('id', user.id).maybeSingle();
-    if (p.error || !p.data) {
-      $('pesan-dasbor').textContent = 'Profil pengguna belum terdaftar.';
-      return;
-    }
-    $('nama-pengguna').textContent = p.data.nama;
-    $('peran-pengguna').textContent = p.data.peran;
-    $('nama-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : '-';
-    var m = await db.from('master_limbah').select('kode', { count: 'exact', head: true });
-    $('jumlah-limbah').textContent = m.error ? 'gagal dibaca' : m.count + ' kode';
-  }
-
-  async function mulai() {
-    var s = await db.auth.getSession();
-    if (s.data.session) { muatDasbor(s.data.session.user); } else { tampil('login'); }
-  }
-
-  $('form-login').addEventListener('submit', async function (e) {
-    e.preventDefault();
-    if (!db) return;
-    $('tombol-masuk').disabled = true;
-    $('pesan-login').textContent = '';
-    var r = await db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pin').value });
-    $('tombol-masuk').disabled = false;
-    if (r.error) { $('pesan-login').textContent = 'Email atau PIN salah.'; return; }
-    $('pin').value = '';
-    muatDasbor(r.data.user);
-  });
-
-  $('tombol-keluar').addEventListener('click', async function () {
-    await db.auth.signOut();
-    tampil('login');
-  });
-</script>
+<script src="app.js"></script>
+<script src="limbah.js"></script>
 </body>
 </html>
