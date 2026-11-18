@@ -31,3 +31,5 @@ button:disabled { opacity:.6; }
 .ok { color:var(--hijau); font-weight:600; }
 .lewat { color:var(--merah); font-weight:700; }
 h3 { margin:22px 0 8px; font-size:15px; }
+.nonaktif { opacity:.55; }
+.aksi { display:flex; gap:8px; margin-top:10px; }
