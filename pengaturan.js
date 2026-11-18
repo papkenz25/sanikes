@@ -30,6 +30,13 @@
     return r.data || [];
   }
 
+  function namaTabData() {
+    var b = Array.prototype.filter.call(document.querySelectorAll('.bawah button'), function (x) { return x.textContent.trim() === 'Data'; })[0];
+    return (b && b.getAttribute('data-tab')) || 'data';
+  }
+  function tabAktif() { var b = document.querySelector('.bawah button.aktif'); return b ? b.getAttribute('data-tab') : ''; }
+  var TAB = namaTabData();
+
   function blokTitik(jenis, judul, list, contoh, boleh) {
     return '<h3>' + judul + '</h3>' +
       (list.length ? list.map(function (t) {
@@ -46,7 +53,8 @@
     var rg = await App.db.from('ruangan').select('id,nama,zona_risiko').eq('aktif', true).order('nama');
     var dis = boleh ? '' : ' disabled';
 
-    var html = '<button type="button" style="' + G1 + '" id="pf-kembali">← Kembali</button>' +
+    el.innerHTML = '<div id="pf-root">' +
+      '<button type="button" style="' + G1 + '" id="pf-kembali">← Kembali ke Data</button>' +
       '<h3>Pengaturan fasyankes</h3>' +
       (boleh ? '' : '<div class="info">Hanya admin fasyankes dan petugas kesling yang dapat mengubah pengaturan.</div>') +
       '<label>Kelas baku mutu IPAL</label><select id="pf-kelas"' + dis + '><option value="">- pilih -</option>' +
@@ -59,13 +67,13 @@
         return '<div class="baris"><b>' + esc(r.nama) + '</b><select data-zona="' + r.id + '"' + dis + '><option value="">- belum diatur -</option>' +
           ZONA.map(function (z) { return '<option' + (r.zona_risiko === z ? ' selected' : '') + '>' + z + '</option>'; }).join('') + '</select></div>';
       }).join('') : '<p class="muted">Belum ada ruangan.</p>') +
-      '<div class="pesan" id="pf-pesan">' + esc(pesan || '') + '</div>';
-    el.innerHTML = html;
+      '<div class="pesan" id="pf-pesan">' + esc(pesan || '') + '</div></div>';
 
-    $('pf-kembali').onclick = function () { App.tabs.data(el); };
+    var root = $('pf-root');
+    $('pf-kembali').onclick = function () { App.tabs[TAB](el); };
     if (!boleh) return;
 
-    el.onchange = async function (e) {
+    root.onchange = async function (e) {
       var t = e.target, err = null, msg = '';
       if (t.id === 'pf-kelas') { err = await simpan('kelas_ipal', t.value); msg = 'Kelas IPAL disimpan.'; }
       else if (t.getAttribute('data-zona')) {
@@ -74,16 +82,14 @@
       } else return;
       $('pf-pesan').textContent = err ? 'Gagal: ' + (err.message || 'coba lagi') : msg;
     };
-    el.onclick = async function (e) {
+    root.onclick = async function (e) {
       var tb = e.target.getAttribute && e.target.getAttribute('data-tambah');
       var na = e.target.getAttribute && e.target.getAttribute('data-nonaktif');
       if (tb) {
         var nama = $('pf-baru-' + tb).value.trim();
         if (!nama) { $('pf-pesan').textContent = 'Isi nama titik dulu.'; return; }
         var r = await App.db.from('titik').insert({ jenis: tb, nama: nama });
-        if (r.error && r.error.code === '23505') {
-          r = await App.db.from('titik').update({ aktif: true }).eq('jenis', tb).eq('nama', nama);
-        }
+        if (r.error && r.error.code === '23505') r = await App.db.from('titik').update({ aktif: true }).eq('jenis', tb).eq('nama', nama);
         if (r.error) { $('pf-pesan').textContent = 'Gagal: ' + (r.error.message || 'coba lagi'); return; }
         await tampil(el, 'Titik "' + nama + '" ditambahkan.');
       } else if (na) {
@@ -94,17 +100,30 @@
     };
   }
 
-  var asli = App.tabs.data;
+  var pengamat = null;
+  function pasangKartu(el) {
+    if (!App.profil || App.profil.peran === 'admin_papkenz') return;
+    if (document.getElementById('pf-kartu') || document.getElementById('pf-root')) return;
+    var k = document.createElement('div');
+    k.id = 'pf-kartu';
+    k.innerHTML = '<h3>Pengaturan fasyankes</h3><p class="muted">Kelas IPAL, titik sampel air dan IPAL, serta zona risiko ruangan.</p>' +
+      '<button type="button">Buka pengaturan</button>';
+    el.appendChild(k);
+    k.querySelector('button').onclick = function () { tampil(el); };
+  }
+
+  var asli = App.tabs[TAB];
   if (asli) {
-    App.tabs.data = async function (el) {
-      el.onclick = null; el.onchange = null;
+    App.tabs[TAB] = async function (el) {
+      if (pengamat) pengamat.disconnect();
       await asli(el);
-      if (!App.profil || App.profil.peran === 'admin_papkenz') return;
-      var kartu = document.createElement('div');
-      kartu.innerHTML = '<h3>Pengaturan fasyankes</h3><p class="muted">Kelas IPAL, titik sampel air dan IPAL, serta zona risiko ruangan.</p>' +
-        '<button type="button" id="pf-buka">Buka pengaturan</button>';
-      el.appendChild(kartu);
-      $('pf-buka').onclick = function () { tampil(el); };
+      pasangKartu(el);
+      pengamat = new MutationObserver(function () {
+        var a = tabAktif();
+        if (a && a !== TAB) { pengamat.disconnect(); return; }
+        pasangKartu(el);
+      });
+      pengamat.observe(el, { childList: true });
     };
   }
   App.tabs.pengaturan_fas = tampil;
