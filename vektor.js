@@ -14,7 +14,14 @@
     if (b.maks != null) return Number(b.maks) === 0 ? (n <= 0 ? 'memenuhi' : 'tidak_memenuhi') : (n < Number(b.maks) ? 'memenuhi' : 'tidak_memenuhi');
     return '';
   }
-  function lencana(s) { return s === 'memenuhi' ? '<span class="ok">✓ memenuhi</span>' : (s === 'tidak_memenuhi' ? '<span class="lewat">✗ melebihi baku mutu</span>' : ''); }
+  function lencana(s, b) {
+    if (s === 'memenuhi') return '<span class="ok">✓ memenuhi</span>';
+    if (s === 'tidak_memenuhi') {
+      var teks = (b && b.min != null) ? 'di bawah baku mutu' : 'melebihi baku mutu';
+      return '<span class="lewat">✗ ' + teks + '</span>';
+    }
+    return '';
+  }
 
   App.tabs.vektor_catat = async function (el) {
     if (App.profil.peran === 'admin_papkenz') {
@@ -46,7 +53,7 @@
       if (q.error) { $('vk-daftar').innerHTML = '<div class="info waspada">Gagal memuat.</div>'; return; }
       $('vk-daftar').innerHTML = q.data.length ? q.data.map(function (x) {
         var b = peta[x.jenis_vektor];
-        return '<div class="baris"><b>' + esc(x.jenis_vektor || '') + '</b>: ' + (x.jumlah_temuan != null ? esc(angka(x.jumlah_temuan)) : '-') + ' ' + lencana(status(b, x.jumlah_temuan)) +
+        return '<div class="baris"><b>' + esc(x.jenis_vektor || '') + '</b>: ' + (x.jumlah_temuan != null ? esc(angka(x.jumlah_temuan)) : '-') + ' ' + lencana(status(b, x.jumlah_temuan), b) +
           '<br><span class="muted">' + esc(x.tanggal) + ' · ' + esc(x.lokasi || '') + (x.tindakan ? ' · ' + esc(x.tindakan) : '') + '</span></div>';
       }).join('') : '<p class="muted">Belum ada catatan.</p>';
     }
@@ -55,7 +62,7 @@
       function segar() {
         var j = $('vk-jenis').value, b = peta[j];
         $('vk-batas').textContent = b ? 'Batas: ' + batasTeks(b) + ' (' + (b.satuan || '') + ')' : 'Tidak ada baku mutu untuk jenis ini.';
-        $('vk-st').innerHTML = lencana(status(b, $('vk-nilai').value));
+        $('vk-st').innerHTML = lencana(status(b, $('vk-nilai').value), b);
       }
       $('vk-jenis').addEventListener('change', segar);
       $('vk-nilai').addEventListener('input', segar);
