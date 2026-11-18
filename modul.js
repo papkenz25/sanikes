@@ -24,7 +24,8 @@
       ['ipal_lab', 'Uji lab IPAL', 'inlet / outlet']
     ] },
     vektor: { judul: 'Vektor & Sanitasi', isi: [
-      ['vektor_catat', 'Pengamatan vektor', 'nyamuk, lalat, kecoa, tikus']
+      ['vektor_catat', 'Pengamatan vektor', 'nyamuk, lalat, kecoa, tikus'],
+      ['sanitasi_cek', 'Inspeksi sanitasi bangunan', 'per ruangan / seluruh bangunan']
     ] },
     udara: { judul: 'Udara ruangan', isi: [
       ['udara_ukur', 'Pengukuran udara', 'suhu, cahaya, bising, kuman']

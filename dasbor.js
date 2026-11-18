@@ -1,6 +1,6 @@
 (function () {
   var NAMA_KAT = { air: 'Air', ipal: 'IPAL', vektor: 'Vektor', udara: 'Udara ruangan', sanitasi: 'Sanitasi', tpm: 'Pangan', k3: 'K3' };
-  var MODUL_KAT = { air: 'air_uji', ipal: 'ipal_lab', vektor: 'vektor_catat', udara: 'udara_ukur' };
+  var MODUL_KAT = { air: 'air_uji', ipal: 'ipal_lab', vektor: 'vektor_catat', udara: 'udara_ukur', sanitasi: 'sanitasi_cek' };
 
   function hariIni() { return tglLokal(new Date()); }
   function tambahHari(n) { var d = new Date(); d.setDate(d.getDate() + n); return tglLokal(d); }
