@@ -22,6 +22,9 @@
       ['air_uji', 'Uji kualitas air', 'higiene sanitasi / minum'],
       ['ipal_harian', 'IPAL harian', 'debit, pH, pompa'],
       ['ipal_lab', 'Uji lab IPAL', 'inlet / outlet']
+        ] },
+    vektor: { judul: 'Vektor & Sanitasi', isi: [
+      ['vektor_catat', 'Pengamatan vektor', 'nyamuk, lalat, kecoa, tikus']
     ] }
   };
 
