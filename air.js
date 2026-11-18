@@ -92,6 +92,8 @@
   function bisaTulis() { return TULIS.indexOf(App.profil.peran) > -1; }
   function gagal(id, err) { $(id).textContent = 'Gagal menyimpan: ' + (err && err.message ? err.message : 'coba lagi'); }
   function num(id) { var v = $(id).value; return v === '' ? null : Number(v); }
+  function tx(v) { return v != null && v !== '' ? esc(v) : '-'; }
+  function nm(v, sat) { return v != null ? esc(angka(v)) + (sat || '') : '-'; }
 
   // ===== UJI KUALITAS AIR =====
   App.tabs.air_uji = async function (el) {
@@ -147,6 +149,7 @@
   App.tabs.ipal_harian = async function (el) {
     if (peringatan(el)) return;
     var KONDISI = '<option>Baik</option><option>Perlu perbaikan</option><option>Mati</option>';
+    var BAU = '<option value="">-</option><option>Tidak berbau</option><option>Berbau</option>';
     var phB = { min: 6, maks: 9 };
     try {
       var bm = await ambilBaku('ipal_media_air_3_50');
@@ -155,11 +158,17 @@
     var form = bisaTulis() ?
       '<label>Tanggal</label><input type="date" id="ih-tgl" value="' + tglLokal(new Date()) + '">' +
       '<label>Debit air limbah (m³/hari)</label><input type="number" step="any" inputmode="decimal" id="ih-debit"><div id="ih-kelas" class="muted"></div>' +
-      '<label>pH inlet (sebelum pengolahan)</label><input type="number" step="any" inputmode="decimal" id="ih-phin">' +
-      '<label>pH outlet (setelah pengolahan)</label><input type="number" step="any" inputmode="decimal" id="ih-ph"><div id="ih-phst"></div>' +
+      '<h3>Inlet (sebelum pengolahan)</h3>' +
+      '<label>pH inlet</label><input type="number" step="any" inputmode="decimal" id="ih-phin">' +
+      '<label>Suhu inlet (°C)</label><input type="number" step="any" inputmode="decimal" id="ih-suhuin">' +
+      '<label>Warna inlet</label><input id="ih-warnain" placeholder="mis. keruh, kecokelatan">' +
+      '<label>Bau inlet</label><select id="ih-bauin">' + BAU + '</select>' +
+      '<h3>Outlet (setelah pengolahan)</h3>' +
+      '<label>pH outlet</label><input type="number" step="any" inputmode="decimal" id="ih-ph"><div id="ih-phst"></div>' +
       '<label>Suhu outlet (°C)</label><input type="number" step="any" inputmode="decimal" id="ih-suhu">' +
       '<label>Warna outlet</label><input id="ih-warna" placeholder="mis. jernih, keruh">' +
-      '<label>Bau outlet</label><select id="ih-bau"><option value="">-</option><option>Tidak berbau</option><option>Berbau</option></select>' +
+      '<label>Bau outlet</label><select id="ih-bau">' + BAU + '</select>' +
+      '<h3>Peralatan</h3>' +
       '<label>Kondisi pompa</label><select id="ih-pompa">' + KONDISI + '</select>' +
       '<label>Kondisi blower</label><select id="ih-blower">' + KONDISI + '</select>' +
       '<label>Catatan (opsional)</label><input id="ih-cat">' +
@@ -171,10 +180,10 @@
       if (r.error) { $('ih-daftar').innerHTML = '<div class="info waspada">Gagal memuat.</div>'; return; }
       $('ih-daftar').innerHTML = r.data.length ? r.data.map(function (x) {
         var luar = x.ph != null && status(phB, x.ph) === 'tidak_memenuhi';
-        return '<div class="baris"><b>' + esc(x.tanggal) + '</b> · debit ' + (x.debit != null ? esc(angka(x.debit)) + ' m³' : '-') +
-          '<br>pH inlet ' + (x.ph_inlet != null ? esc(angka(x.ph_inlet)) : '-') + ' · pH outlet <span class="' + (luar ? 'lewat' : '') + '">' + (x.ph != null ? esc(angka(x.ph)) : '-') + '</span>' +
-          '<br><span class="muted">Outlet: suhu ' + (x.suhu_outlet != null ? esc(angka(x.suhu_outlet)) + ' °C' : '-') + ' · warna ' + esc(x.warna_outlet || '-') + ' · bau ' + esc(x.bau_outlet || '-') +
-          '<br>Pompa: ' + esc(x.kondisi_pompa || '-') + ' · Blower: ' + esc(x.kondisi_blower || '-') + (x.catatan ? ' · ' + esc(x.catatan) : '') + '</span></div>';
+        return '<div class="baris"><b>' + esc(x.tanggal) + '</b> · debit ' + nm(x.debit, ' m³') +
+          '<br>Inlet: pH ' + nm(x.ph_inlet) + ' · suhu ' + nm(x.suhu_inlet, ' °C') + ' · warna ' + tx(x.warna_inlet) + ' · bau ' + tx(x.bau_inlet) +
+          '<br>Outlet: pH <span class="' + (luar ? 'lewat' : '') + '">' + nm(x.ph) + '</span> · suhu ' + nm(x.suhu_outlet, ' °C') + ' · warna ' + tx(x.warna_outlet) + ' · bau ' + tx(x.bau_outlet) +
+          '<br><span class="muted">Pompa: ' + tx(x.kondisi_pompa) + ' · Blower: ' + tx(x.kondisi_blower) + (x.catatan ? ' · ' + esc(x.catatan) : '') + '</span></div>';
       }).join('') : '<p class="muted">Belum ada catatan.</p>';
     }
     if (bisaTulis()) {
@@ -188,8 +197,9 @@
         if (!tgl) { $('ih-pesan').textContent = 'Tanggal wajib diisi.'; return; }
         if (num('ih-debit') === null && num('ih-ph') === null && num('ih-phin') === null) { $('ih-pesan').textContent = 'Isi debit atau pH.'; return; }
         var r = await App.db.from('ipal_harian').insert({
-          tanggal: tgl, debit: num('ih-debit'), ph_inlet: num('ih-phin'), ph: num('ih-ph'), suhu_outlet: num('ih-suhu'),
-          warna_outlet: $('ih-warna').value.trim() || null, bau_outlet: $('ih-bau').value || null,
+          tanggal: tgl, debit: num('ih-debit'),
+          ph_inlet: num('ih-phin'), suhu_inlet: num('ih-suhuin'), warna_inlet: $('ih-warnain').value.trim() || null, bau_inlet: $('ih-bauin').value || null,
+          ph: num('ih-ph'), suhu_outlet: num('ih-suhu'), warna_outlet: $('ih-warna').value.trim() || null, bau_outlet: $('ih-bau').value || null,
           kondisi_pompa: $('ih-pompa').value, kondisi_blower: $('ih-blower').value, catatan: $('ih-cat').value.trim() || null
         });
         if (r.error) { gagal('ih-pesan', r.error); return; }
