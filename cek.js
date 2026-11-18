@@ -36,9 +36,10 @@
       else if (cfg.lokasi === 'tahun') inLok = '<label>' + esc(cfg.lokasiLabel) + '</label><input type="number" id="ck-lok" value="' + new Date().getFullYear() + '">';
       else inLok = '<label>' + esc(cfg.lokasiLabel) + '</label><input id="ck-lok" placeholder="' + esc(cfg.lokasiContoh || '') + '">';
 
+      var inJenis = cfg.jenis ? '<label>Jenis tempat</label><select id="ck-jenis">' + cfg.jenis.map(function (j) { return '<option>' + esc(j) + '</option>'; }).join('') + '</select>' : '';
       var form = bisaTulis()
         ? (soal.length
-          ? '<label>Tanggal</label><input type="date" id="ck-tgl" value="' + tglLokal(new Date()) + '">' + inLok +
+          ? '<label>Tanggal</label><input type="date" id="ck-tgl" value="' + tglLokal(new Date()) + '">' + inJenis + inLok +
             '<p class="muted">' + (cfg.info || '') + (batas != null ? ' Batas laik: ' + batas + '.' : '') + '</p>' +
             '<div id="ck-soal"></div><div id="ck-skor" class="info"></div>' +
             '<label>Catatan (opsional)</label><input id="ck-cat">' +
@@ -82,7 +83,7 @@
         w.innerHTML = '<div class="noprint" style="margin:12px 0"><button type="button" id="ck-print" style="width:auto;padding:10px 20px">Cetak / simpan PDF</button> ' +
           '<button type="button" id="ck-tutup" style="width:auto;padding:10px 20px;background:#666">Tutup</button></div>' +
           '<h3>' + esc(cfg.judulCetak || cfg.judul) + '</h3><p>' + esc((App.profil.fasyankes && App.profil.fasyankes.nama) || '') + '<br>' +
-          esc(cfg.lokasiLabel) + ': ' + esc(x.lokasi || '-') + ' · Tanggal: ' + esc(x.tanggal) + '</p>' +
+          (x.jenis_objek ? 'Jenis tempat: ' + esc(x.jenis_objek) + '<br>' : '') + esc(cfg.lokasiLabel) + ': ' + esc(x.lokasi || '-') + ' · Tanggal: ' + esc(x.tanggal) + '</p>' +
           '<table style="width:100%;border-collapse:collapse;font-size:13px">' + isi + '</table>' +
           '<p>' + (x.skor != null && x.batas_skor != null ? 'Skor: <b>' + angka(x.skor) + '</b> (batas ' + x.batas_skor + ') · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') : '') + '</p>' +
           (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') +
@@ -103,7 +104,7 @@
           (rows.length ? rows.map(function (x) {
             var jml = 0;
             Object.keys(x.jawaban || {}).forEach(function (k) { if (x.jawaban[k] === 'tidak') jml++; });
-            return '<div class="baris"' + (x.dihapus ? ' style="opacity:.6"' : '') + '><b>' + esc(x.lokasi || '-') + '</b>' +
+            return '<div class="baris"' + (x.dihapus ? ' style="opacity:.6"' : '') + '><b>' + esc(x.lokasi || '-') + '</b>' + (x.jenis_objek ? ' · ' + esc(x.jenis_objek) : '') +
               (x.skor != null ? ' · skor ' + angka(x.skor) : '') + ' ' + lencana(x.status) +
               '<br><span class="muted">' + esc(x.tanggal) + ' · ' + jml + ' item ' + esc(cfg.hasilTidak || 'tidak sesuai') + (x.catatan ? ' · ' + esc(x.catatan) : '') + '</span>' +
               '<br><button type="button" class="chip" data-cetak="' + x.id + '">Lihat / cetak</button>' +
@@ -140,11 +141,13 @@
           var h = hitung(soal, jw);
           var st = (batas == null || h.skor === null) ? '-' : (h.skor >= batas ? 'memenuhi' : 'tidak_memenuhi');
           $('ck-pesan').textContent = 'Menyimpan...';
-          var res = await App.db.from(cfg.tabel).insert({
+          var baru = {
             tanggal: tgl, lokasi: lok, jawaban: jw, skor: h.skor, status: st, batas_skor: batas,
             catatan: $('ck-cat').value.trim() || null,
             temuan: h.tidak.length ? h.tidak.map(function (q) { return '• ' + q.pertanyaan; }).join('\n') : null
-          }).select('id');
+          };
+          if (cfg.jenis) baru.jenis_objek = $('ck-jenis').value;
+          var res = await App.db.from(cfg.tabel).insert(baru).select('id');
           if (res.error) { $('ck-pesan').textContent = 'Gagal menyimpan: ' + (res.error.message || 'coba lagi'); return; }
           var id = res.data && res.data[0] && res.data[0].id;
           if (h.tidak.length && window.TL) {
@@ -171,6 +174,15 @@
     lokasi: 'teks', lokasiLabel: 'Nama TPP / dapur', lokasiContoh: 'mis. Instalasi gizi, Kantin karyawan',
     batasKunci: 'batas_skor_tpm', batasDefault: 80,
     info: 'Pertanyaan disusun dari Persyaratan Kesehatan Pangan Olahan Siap Saji (Permenkes 2/2023 Lampiran D). Batas laik mengikuti Permenkes 11/2025 (nilai minimal 80). Jawaban "Tidak sesuai" otomatis dicatat sebagai temuan.'
+  });
+  CEK({
+    tab: 'ttu_cek', judul: 'Inspeksi tempat dan fasilitas umum (TFU/TTU)', judulCetak: 'HASIL INSPEKSI KESEHATAN LINGKUNGAN TEMPAT DAN FASILITAS UMUM',
+    modul: 'ttu', tabel: 'ikl_inspeksi', kategori: 'ttu',
+    jenis: ['Sekolah / madrasah', 'Pondok pesantren', 'Tempat ibadah', 'Pasar', 'Hotel / penginapan', 'Terminal / stasiun / pelabuhan', 'Tempat rekreasi', 'Sarana olahraga / kolam renang', 'Perkantoran', 'Fasilitas kesehatan', 'Lainnya'],
+    opsi: [['ya', 'Ya, sesuai'], ['tidak', 'Tidak sesuai'], ['tb', 'Tidak berlaku']],
+    lokasi: 'teks', lokasiLabel: 'Nama tempat', lokasiContoh: 'mis. SD Negeri 1, Masjid Raya, Pasar Sentral',
+    batasKunci: 'batas_skor_ttu', batasDefault: 70,
+    info: 'Pertanyaan disusun dari SBMKL dan Persyaratan Kesehatan media air, udara, sarana dan bangunan, serta vektor (Permenkes 2/2023 Lampiran). Batas laik 70 mengikuti batas IKL laik sehat di Permenkes 11/2025 dan bisa diubah di pengaturan. Jawaban "Tidak sesuai" otomatis menjadi temuan.'
   });
   CEK({
     tab: 'k3_tahunan', judul: 'Laporan tahunan K3 fasyankes', judulCetak: 'LAPORAN TAHUNAN KESELAMATAN DAN KESEHATAN KERJA DI FASILITAS PELAYANAN KESEHATAN',

@@ -37,6 +37,7 @@
       ['k3_tahunan', 'Laporan tahunan K3', 'checklist Ada / Tidak']
     ] },
     pkm: { judul: 'Kesling Puskesmas', isi: [
+      ['ttu_cek', 'Inspeksi TFU / TTU', 'sekolah, ibadah, pasar, hotel'],
       ['pkm_stbm', 'STBM 5 pilar', 'per KK, rekap per desa']
     ] },
     kit: { judul: 'Alat sanitarian & merkuri', isi: [
