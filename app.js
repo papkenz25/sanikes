@@ -1,6 +1,7 @@
 var cfg = window.SANIKES_CONFIG || {};
 var $ = function (id) { return document.getElementById(id); };
-var App = { db: null, profil: null, tabs: {} };
+var App = { db: null, profil: null, tabs: {}, tab: 'dasbor', satuan: 'kg' };
+try { App.satuan = localStorage.getItem('sanikes_satuan') === 'ton' ? 'ton' : 'kg'; } catch (e) { App.satuan = 'kg'; }
 
 function esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -12,9 +13,34 @@ function jamLokal(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 600
 function fmtWaktu(iso) {
   return new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
+function fmtBerat(kg) {
+  var v = Number(kg) || 0;
+  return App.satuan === 'ton' ? (v / 1000).toFixed(4) + ' ton' : v.toFixed(3) + ' kg';
+}
 function tampil(layar) {
   $('layar-login').hidden = layar !== 'login';
   $('layar-app').hidden = layar !== 'app';
+}
+
+function pasangSatuan() {
+  var ada = $('tombol-satuan');
+  if (ada) { ada.textContent = 'Satuan: ' + App.satuan; return; }
+  var k = $('tombol-keluar');
+  var w = document.createElement('div');
+  w.style.cssText = 'display:flex;gap:8px;align-items:center';
+  k.parentNode.insertBefore(w, k);
+  var tb = document.createElement('button');
+  tb.id = 'tombol-satuan';
+  tb.className = 'kecil';
+  tb.textContent = 'Satuan: ' + App.satuan;
+  tb.addEventListener('click', function () {
+    App.satuan = App.satuan === 'kg' ? 'ton' : 'kg';
+    try { localStorage.setItem('sanikes_satuan', App.satuan); } catch (e) {}
+    tb.textContent = 'Satuan: ' + App.satuan;
+    bukaTab(App.tab);
+  });
+  w.appendChild(tb);
+  w.appendChild(k);
 }
 
 async function masukApp(user) {
@@ -29,10 +55,12 @@ async function masukApp(user) {
   $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : 'Admin Papkenz';
   document.querySelector('[data-tab="catat"]').hidden = p.data.peran === 'admin_papkenz';
   tampil('app');
+  pasangSatuan();
   bukaTab('dasbor');
 }
 
 function bukaTab(nama) {
+  App.tab = nama;
   document.querySelectorAll('.bawah button').forEach(function (b) {
     b.classList.toggle('aktif', b.dataset.tab === nama);
   });
@@ -56,7 +84,7 @@ App.tabs.dasbor = async function (el) {
     .order('batas_simpan', { ascending: true }).limit(5);
   var total = 0;
   (a.data || []).forEach(function (x) { total += Number(x.berat_kg); });
-  html += '<div class="info">Limbah tercatat hari ini: <b>' + total.toFixed(3) + ' kg</b> (' + (a.data || []).length + ' catatan)</div>';
+  html += '<div class="info">Limbah tercatat hari ini: <b>' + fmtBerat(total) + '</b> (' + (a.data || []).length + ' catatan)</div>';
   html += '<h3>Batas simpan terdekat</h3>';
   if (!b.data || !b.data.length) {
     html += '<p class="muted">Belum ada limbah yang disimpan.</p>';
@@ -66,7 +94,7 @@ App.tabs.dasbor = async function (el) {
       var t = new Date(x.batas_simpan).getTime();
       var ket = t < sekarang ? '<span class="lewat">LEWAT BATAS</span>'
         : (t - sekarang < 86400000 ? '<span class="lewat">H-1</span>' : '<span class="ok">Aman</span>');
-      html += '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + Number(x.berat_kg).toFixed(3) + ' kg<br>Batas: ' + fmtWaktu(x.batas_simpan) + ' · ' + ket + '</div>';
+      html += '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + fmtBerat(x.berat_kg) + '<br>Batas: ' + fmtWaktu(x.batas_simpan) + ' · ' + ket + '</div>';
     });
   }
   el.innerHTML = html;
