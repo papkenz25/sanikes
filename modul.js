@@ -3,11 +3,11 @@
     ['limbah', 'Limbah B3', true],
     ['air', 'Air & IPAL', true],
     ['vektor', 'Vektor & Sanitasi', true],
+    ['udara', 'Udara ruangan', true],
     ['tpm', 'TPM & Gizi', false],
     ['k3', 'APD & K3', false],
     ['rs', 'Pengawasan RS', false],
     ['pkm', 'Kesling Puskesmas', false],
-    ['udara', 'Udara (SKUDR)', false],
     ['kit', 'Sanitarian Kit & Alkes', false]
   ];
 
@@ -22,9 +22,12 @@
       ['air_uji', 'Uji kualitas air', 'higiene sanitasi / minum'],
       ['ipal_harian', 'IPAL harian', 'debit, pH, pompa'],
       ['ipal_lab', 'Uji lab IPAL', 'inlet / outlet']
-        ] },
+    ] },
     vektor: { judul: 'Vektor & Sanitasi', isi: [
       ['vektor_catat', 'Pengamatan vektor', 'nyamuk, lalat, kecoa, tikus']
+    ] },
+    udara: { judul: 'Udara ruangan', isi: [
+      ['udara_ukur', 'Pengukuran udara', 'suhu, cahaya, bising, kuman']
     ] }
   };
 
@@ -52,8 +55,8 @@
             ' style="' + KOTAK + (m[2] ? '' : ';opacity:.45') + '">' + m[1] + (m[2] ? '' : '<br><small>Segera</small>') + '</button>';
         }).join('') + '</div>';
     }
-    el.innerHTML = h;
-    el.onclick = function (e) {
+    el.innerHTML = '<div id="modul-root">' + h + '</div>';
+    $('modul-root').onclick = function (e) {
       var b = e.target.closest('button');
       if (!b) return;
       if (b.dataset.m) tampil(el, b.dataset.m);
@@ -62,5 +65,5 @@
     };
   }
 
-  App.tabs.modul = function (el) { tampil(el, null); };
+  App.tabs.modul = function (el) { el.onclick = null; tampil(el, null); };
 })();
