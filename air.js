@@ -31,6 +31,14 @@
     if (x.hasil != null) return angka(x.hasil) + ' ' + (x.satuan && x.satuan !== '-' ? x.satuan : '');
     return x.catatan || '-';
   }
+  function hasilStr(x) {
+    if (x.v != null) return angka(x.v) + (x.b.satuan && x.b.satuan !== '-' ? ' ' + x.b.satuan : '');
+    return x.q || '';
+  }
+  function uraianStr(b) {
+    var t = batasTeks(b);
+    return 'tidak memenuhi baku mutu' + (t ? ' (batas ' + t + ')' : '');
+  }
 
   async function ambilBaku(modul) {
     var r = await App.db.from('master_bakumutu').select('*').eq('modul', modul).eq('aktif', true)
@@ -94,6 +102,7 @@
   function num(id) { var v = $(id).value; return v === '' ? null : Number(v); }
   function tx(v) { return v != null && v !== '' ? esc(v) : '-'; }
   function nm(v, sat) { return v != null ? esc(angka(v)) + (sat || '') : '-'; }
+  function panelTL(kategori) { if (window.TL && $('tl-box')) TL.panel($('tl-box'), kategori); }
 
   // ===== UJI KUALITAS AIR =====
   App.tabs.air_uji = async function (el) {
@@ -106,7 +115,7 @@
       '<label>Laboratorium / pemeriksa (opsional)</label><input id="au-lab">' +
       '<p class="muted">Isi hanya parameter yang diperiksa. Suhu diisi sebagai selisih: suhu air dikurangi suhu udara.</p><div id="au-param"></div>' +
       '<button type="button" id="au-simpan">Simpan hasil</button><div class="pesan" id="au-pesan"></div>' : '';
-    el.innerHTML = '<h3 style="margin-top:0">Uji kualitas air</h3>' + form + '<h3>Hasil terbaru</h3><div id="au-daftar"></div>';
+    el.innerHTML = '<h3 style="margin-top:0">Uji kualitas air</h3>' + form + '<div id="tl-box"></div><h3>Hasil terbaru</h3><div id="au-daftar"></div>';
 
     async function daftar() {
       var r = await App.db.from('air_uji').select('*').order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(30);
@@ -136,13 +145,23 @@
         });
         var r = await App.db.from('air_uji').insert(rows);
         if (r.error) { gagal('au-pesan', r.error); return; }
-        var tidak = isi.filter(function (x) { return x.s === 'tidak_memenuhi'; }).length;
+        var tidakList = isi.filter(function (x) { return x.s === 'tidak_memenuhi'; });
+        var er = null;
+        if (tidakList.length && window.TL) {
+          er = await TL.catat(tidakList.map(function (x) {
+            return { tanggal: tgl, kategori: 'air', sumber: 'air_uji', lokasi: titik, parameter: x.b.parameter, hasil: hasilStr(x), uraian: uraianStr(x.b) };
+          }));
+        }
         await App.tabs.air_uji(el);
-        $('au-pesan').textContent = 'Tersimpan ' + isi.length + ' hasil' + (tidak ? ', ' + tidak + ' tidak memenuhi.' : '.');
+        var msg = 'Tersimpan ' + isi.length + ' hasil';
+        if (tidakList.length) msg += ', ' + tidakList.length + ' tidak memenuhi' + (window.TL ? (er ? ' (temuan gagal dicatat).' : ' dan dicatat sebagai temuan, lihat saran di bawah.') : '.');
+        else msg += '.';
+        $('au-pesan').textContent = msg;
       });
       muat();
     }
     daftar();
+    panelTL('air');
   };
 
   // ===== IPAL HARIAN =====
@@ -173,7 +192,7 @@
       '<label>Kondisi blower</label><select id="ih-blower">' + KONDISI + '</select>' +
       '<label>Catatan (opsional)</label><input id="ih-cat">' +
       '<button type="button" id="ih-simpan">Simpan</button><div class="pesan" id="ih-pesan"></div>' : '';
-    el.innerHTML = '<h3 style="margin-top:0">IPAL harian</h3>' + form + '<h3>Catatan terbaru</h3><div id="ih-daftar"></div>';
+    el.innerHTML = '<h3 style="margin-top:0">IPAL harian</h3>' + form + '<div id="tl-box"></div><h3>Catatan terbaru</h3><div id="ih-daftar"></div>';
 
     async function daftar() {
       var r = await App.db.from('ipal_harian').select('*').order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(15);
@@ -196,18 +215,25 @@
         var tgl = $('ih-tgl').value;
         if (!tgl) { $('ih-pesan').textContent = 'Tanggal wajib diisi.'; return; }
         if (num('ih-debit') === null && num('ih-ph') === null && num('ih-phin') === null) { $('ih-pesan').textContent = 'Isi debit atau pH.'; return; }
+        var phOut = num('ih-ph');
         var r = await App.db.from('ipal_harian').insert({
           tanggal: tgl, debit: num('ih-debit'),
           ph_inlet: num('ih-phin'), suhu_inlet: num('ih-suhuin'), warna_inlet: $('ih-warnain').value.trim() || null, bau_inlet: $('ih-bauin').value || null,
-          ph: num('ih-ph'), suhu_outlet: num('ih-suhu'), warna_outlet: $('ih-warna').value.trim() || null, bau_outlet: $('ih-bau').value || null,
+          ph: phOut, suhu_outlet: num('ih-suhu'), warna_outlet: $('ih-warna').value.trim() || null, bau_outlet: $('ih-bau').value || null,
           kondisi_pompa: $('ih-pompa').value, kondisi_blower: $('ih-blower').value, catatan: $('ih-cat').value.trim() || null
         });
         if (r.error) { gagal('ih-pesan', r.error); return; }
+        var luar = phOut !== null && status(phB, phOut) === 'tidak_memenuhi';
+        var er = null;
+        if (luar && window.TL) {
+          er = await TL.catat([{ tanggal: tgl, kategori: 'ipal', sumber: 'ipal_harian', lokasi: 'Outlet', parameter: 'pH', hasil: 'pH outlet ' + angka(phOut), uraian: uraianStr(phB) }]);
+        }
         await App.tabs.ipal_harian(el);
-        $('ih-pesan').textContent = 'Tersimpan.';
+        $('ih-pesan').textContent = luar && window.TL ? (er ? 'Tersimpan, tetapi temuan gagal dicatat.' : 'Tersimpan. pH outlet di luar baku mutu dan dicatat sebagai temuan, lihat saran di bawah.') : 'Tersimpan.';
       });
     }
     daftar();
+    panelTL('ipal');
   };
 
   // ===== UJI LAB IPAL =====
@@ -230,7 +256,7 @@
       '<label>Laboratorium (opsional)</label><input id="il-lab">' +
       '<p class="muted">Isi hanya parameter yang diperiksa. Inlet tidak dibandingkan dengan baku mutu. Suhu, warna, dan bau dicatat sebagai pengamatan.</p><div id="il-param"></div>' +
       '<button type="button" id="il-simpan">Simpan hasil</button><div class="pesan" id="il-pesan"></div>' : '';
-    el.innerHTML = '<h3 style="margin-top:0">Uji lab IPAL</h3>' + form + '<h3>Hasil terbaru</h3><div id="il-daftar"></div>';
+    el.innerHTML = '<h3 style="margin-top:0">Uji lab IPAL</h3>' + form + '<div id="tl-box"></div><h3>Hasil terbaru</h3><div id="il-daftar"></div>';
 
     async function daftar() {
       var r = await App.db.from('ipal_lab').select('*').order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(30);
@@ -256,22 +282,32 @@
       });
       $('il-titik').addEventListener('change', muat);
       $('il-simpan').addEventListener('click', async function () {
-        var tgl = $('il-tgl').value;
+        var tgl = $('il-tgl').value, titikIpal = $('il-titik').value;
         var isi = kumpul($('il-param'), list);
         if (!tgl) { $('il-pesan').textContent = 'Tanggal wajib diisi.'; return; }
         if (!isi.length) { $('il-pesan').textContent = 'Isi minimal satu hasil.'; return; }
         $('il-pesan').textContent = '';
         var rows = isi.map(function (x) {
-          return { tanggal: tgl, titik: $('il-titik').value, parameter: x.b.parameter, hasil: x.v, satuan: tipe(x.b) === 'angka' ? x.b.satuan : '-', status: x.s || '-', catatan: x.q, lab: $('il-lab').value.trim() || null };
+          return { tanggal: tgl, titik: titikIpal, parameter: x.b.parameter, hasil: x.v, satuan: tipe(x.b) === 'angka' ? x.b.satuan : '-', status: x.s || '-', catatan: x.q, lab: $('il-lab').value.trim() || null };
         });
         var r = await App.db.from('ipal_lab').insert(rows);
         if (r.error) { gagal('il-pesan', r.error); return; }
-        var tidak = isi.filter(function (x) { return x.s === 'tidak_memenuhi'; }).length;
+        var tidakList = isi.filter(function (x) { return x.s === 'tidak_memenuhi'; });
+        var er = null;
+        if (tidakList.length && window.TL) {
+          er = await TL.catat(tidakList.map(function (x) {
+            return { tanggal: tgl, kategori: 'ipal', sumber: 'ipal_lab', lokasi: titikIpal, parameter: x.b.parameter, hasil: hasilStr(x), uraian: uraianStr(x.b) };
+          }));
+        }
         await App.tabs.ipal_lab(el);
-        $('il-pesan').textContent = 'Tersimpan ' + isi.length + ' hasil' + (tidak ? ', ' + tidak + ' tidak memenuhi.' : '.');
+        var msg = 'Tersimpan ' + isi.length + ' hasil';
+        if (tidakList.length) msg += ', ' + tidakList.length + ' tidak memenuhi' + (window.TL ? (er ? ' (temuan gagal dicatat).' : ' dan dicatat sebagai temuan, lihat saran di bawah.') : '.');
+        else msg += '.';
+        $('il-pesan').textContent = msg;
       });
       muat();
     }
     daftar();
+    panelTL('ipal');
   };
 })();
