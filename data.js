@@ -1,11 +1,13 @@
 (function () {
   var SUHU = [['ruang', 'Suhu ruang'], ['pendingin', 'Pendingin (0-5 C)'], ['beku', 'Beku (0 C atau kurang)']];
   var PERAN = [['pengangkut', 'Pengangkut'], ['pengumpul', 'Pengumpul'], ['pengolah', 'Pengolah'], ['pemanfaat', 'Pemanfaat']];
+  var ZONA = [['Rendah', 'Rendah'], ['Sedang', 'Sedang'], ['Tinggi', 'Tinggi'], ['Sangat tinggi', 'Sangat tinggi']];
 
   var JENIS = {
     ruangan: { tabel: 'ruangan', judul: 'Ruangan', urut: 'nama', kolom: [
       { k: 'nama', l: 'Nama ruangan', t: 'text', w: true },
-      { k: 'jenis', l: 'Jenis (opsional)', t: 'text' }
+      { k: 'jenis', l: 'Jenis (opsional)', t: 'text' },
+      { k: 'zona_risiko', l: 'Zona risiko (opsional)', t: 'select', o: ZONA }
     ] },
     tps: { tabel: 'tps', judul: 'TPS', urut: 'nama', kolom: [
       { k: 'nama', l: 'Nama TPS', t: 'text', w: true },
@@ -43,7 +45,8 @@
   }
 
   function ringkas(key, r) {
-    if (key === 'ruangan') return '<b>' + esc(r.nama) + '</b>' + (r.jenis ? ' · ' + esc(r.jenis) : '');
+    if (key === 'ruangan') return '<b>' + esc(r.nama) + '</b>' + (r.jenis ? ' · ' + esc(r.jenis) : '') +
+      (r.zona_risiko ? '<br><span class="muted">Zona risiko: ' + esc(r.zona_risiko) + '</span>' : '');
     if (key === 'tps') {
       var s = SUHU.filter(function (x) { return x[0] === r.suhu; })[0];
       return '<b>' + esc(r.nama) + '</b> · ' + esc(s ? s[1] : '-') + (r.no_izin_rintek ? '<br>Izin: ' + esc(r.no_izin_rintek) : '');
@@ -74,6 +77,7 @@
     var j = JENIS[kini];
     var r = await App.db.from(j.tabel).select('*').order('aktif', { ascending: false }).order(j.urut);
     var box = $('d-daftar');
+    if (!box) return;
     if (r.error) { box.innerHTML = '<p class="muted">Gagal memuat data.</p>'; return; }
     if (!r.data.length) { box.innerHTML = '<p class="muted">Belum ada data.</p>'; return; }
     baris = {};
@@ -85,34 +89,40 @@
         : '';
       return '<div class="baris' + (x.aktif ? '' : ' nonaktif') + '">' + ringkas(kini, x) + (x.aktif ? '' : ' <i>(nonaktif)</i>') + aksi + '</div>';
     }).join('');
-    box.addEventListener('click', async function (e) {
+    box.onclick = async function (e) {
       var b = e.target.closest('button');
       if (!b) return;
       var row = baris[b.dataset.id];
       if (!row) return;
       if (b.dataset.aksi === 'ubah') { sunting = row; render(); window.scrollTo(0, 0); }
       if (b.dataset.aksi === 'toggle') {
+        b.disabled = true;
         await App.db.from(j.tabel).update({ aktif: !row.aktif }).eq('id', row.id);
         muatDaftar();
       }
-    });
+    };
   }
 
   async function render() {
-    var j = JENIS[kini];
     var chips = Object.keys(JENIS).map(function (k) {
       return '<button type="button" class="chip' + (k === kini ? ' aktif' : '') + '" data-j="' + k + '">' + esc(JENIS[k].judul) + '</button>';
-    }).join('');
+    }).join('') + '<button type="button" class="chip' + (kini === 'pengaturan' ? ' aktif' : '') + '" data-j="pengaturan">Pengaturan</button>';
     var html = '<h3 style="margin-top:0">Data fasyankes</h3><div class="chips" id="d-menu">' + chips + '</div>';
+
+    if (kini === 'pengaturan') {
+      elRoot.innerHTML = html + '<div id="d-pengaturan"><p class="muted">Memuat...</p></div>';
+      pasangMenu();
+      if (window.PENGATURAN && PENGATURAN.tampil) await PENGATURAN.tampil($('d-pengaturan'));
+      else $('d-pengaturan').innerHTML = '<div class="info waspada">File pengaturan.js belum termuat.</div>';
+      return;
+    }
+
+    var j = JENIS[kini];
     if (bisaUbah) html += formHtml(j);
     else html += '<div class="info">Peran Anda hanya bisa melihat data.</div>';
     html += '<h3>Daftar ' + esc(j.judul) + '</h3><div id="d-daftar"><p class="muted">Memuat...</p></div>';
     elRoot.innerHTML = html;
-
-    $('d-menu').addEventListener('click', function (e) {
-      var c = e.target.closest('.chip');
-      if (c) { kini = c.dataset.j; sunting = null; render(); }
-    });
+    pasangMenu();
 
     if (bisaUbah) {
       if (sunting) {
@@ -146,6 +156,13 @@
     await muatDaftar();
   }
 
+  function pasangMenu() {
+    $('d-menu').onclick = function (e) {
+      var c = e.target.closest('.chip');
+      if (c) { kini = c.dataset.j; sunting = null; render(); }
+    };
+  }
+
   App.tabs.data = async function (el) {
     elRoot = el;
     var peran = App.profil.peran;
@@ -155,6 +172,7 @@
     }
     bisaUbah = ['admin_fasyankes', 'petugas_kesling'].indexOf(peran) >= 0;
     sunting = null;
+    if (window.DATA_SUB) { kini = window.DATA_SUB; window.DATA_SUB = null; }
     var m = await App.db.from('master_limbah').select('kode, nama').eq('aktif', true).order('kode');
     var seen = {};
     kodeOpsi = [];
