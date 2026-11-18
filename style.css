@@ -33,3 +33,4 @@ button:disabled { opacity:.6; }
 h3 { margin:22px 0 8px; font-size:15px; }
 .nonaktif { opacity:.55; }
 .aksi { display:flex; gap:8px; margin-top:10px; }
+@media print { .atas, .bawah, .noprint { display:none !important; } #isi { padding:0; max-width:none; } body { background:#fff; } }
