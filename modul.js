@@ -4,8 +4,8 @@
     ['air', 'Air & IPAL', true],
     ['vektor', 'Vektor & Sanitasi', true],
     ['udara', 'Udara ruangan', true],
-    ['tpm', 'TPM & Gizi', false],
-    ['k3', 'APD & K3', false],
+    ['tpm', 'Pangan (TPM & Gizi)', true],
+    ['k3', 'K3 Fasyankes', true],
     ['rs', 'Pengawasan RS', false],
     ['pkm', 'Kesling Puskesmas', false],
     ['kit', 'Sanitarian Kit & Alkes', false]
@@ -26,6 +26,14 @@
     vektor: { judul: 'Vektor & Sanitasi', isi: [
       ['vektor_catat', 'Pengamatan vektor', 'nyamuk, lalat, kecoa, tikus'],
       ['sanitasi_cek', 'Inspeksi sanitasi bangunan', 'per ruangan / seluruh bangunan']
+    ] },
+    tpm: { judul: 'Pangan (TPM & Gizi)', isi: [
+      ['tpm_cek', 'Inspeksi TPP', 'dapur, instalasi gizi, kantin']
+    ] },
+    k3: { judul: 'K3 Fasyankes', isi: [
+      ['k3_insiden', 'Insiden K3', 'kecelakaan, tertusuk jarum, tumpahan'],
+      ['k3_semester', 'Laporan semester K3', 'format Permenkes 52/2018'],
+      ['k3_tahunan', 'Laporan tahunan K3', 'checklist Ada / Tidak']
     ] },
     udara: { judul: 'Udara ruangan', isi: [
       ['udara_ukur', 'Pengukuran udara', 'suhu, cahaya, bising, kuman']
