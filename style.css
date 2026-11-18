@@ -34,3 +34,10 @@ h3 { margin:22px 0 8px; font-size:15px; }
 .nonaktif { opacity:.55; }
 .aksi { display:flex; gap:8px; margin-top:10px; }
 @media print { .atas, .bawah, .noprint { display:none !important; } #isi { padding:0; max-width:none; } body { background:#fff; } }
+@media screen and (min-width: 900px) {
+  .bawah { top:0; bottom:0; right:auto; width:180px; flex-direction:column; justify-content:flex-start; padding-top:16px; border-top:0; border-right:1px solid var(--garis); z-index:6; }
+  .bawah button { flex:none; text-align:left; padding:16px 20px; font-size:15px; }
+  .bawah button.aktif { box-shadow:inset 4px 0 0 var(--hijau); background:var(--muda); }
+  .atas { padding-left:196px; }
+  #isi { max-width:900px; padding:16px 16px 32px 196px; }
+}
