@@ -1,7 +1,10 @@
 (function () {
   var WARNA = { kuning: '#F2C200', cokelat: '#8B5A2B', ungu: '#7B3FA0', merah: '#D32F2F', hijau: '#2E7D32' };
+  var SUHU = [['ruang', 'Suhu ruang'], ['pendingin', 'Pendingin (0-5 C)'], ['beku', 'Beku (0 C atau kurang)']];
+  var G1 = 'width:auto;display:inline-block;padding:6px 14px;margin:6px 6px 0 0;font-size:14px';
+  var G2 = G1 + ';background:#fff;color:#a33;border:1px solid #a33';
   var cache = {};
-  var S = { master: [], items: [], tps: [], kode: null, token: 0 };
+  var S = { master: [], items: [], tps: [], ruang: [], kode: null, token: 0, rows: {} };
 
   function beratKg() {
     var v = parseFloat($('l-berat').value);
@@ -82,20 +85,113 @@
     segarkanBatas();
   }
 
-  async function muatDaftar() {
-    var r = await App.db.from('limbah_harian')
-      .select('jam, kode_limbah, nama_limbah, berat_kg, batas_simpan, ruangan(nama), tps(nama)')
-      .eq('tanggal', tglLokal(new Date())).order('dibuat', { ascending: false });
+  // ===== DAFTAR HARI INI + UBAH / HAPUS / PULIHKAN =====
+  function opsi(list, nilai) {
+    return list.map(function (o) { return '<option value="' + esc(o[0]) + '"' + (String(o[0]) === String(nilai) ? ' selected' : '') + '>' + esc(o[1]) + '</option>'; }).join('');
+  }
+  function formUbah(x) {
+    return '<div style="border:1px solid #ccc;border-radius:10px;padding:10px;margin-top:8px">' +
+      '<label>Tanggal</label><input type="date" id="e-tgl" value="' + esc(x.tanggal) + '">' +
+      '<label>Jam</label><input type="time" id="e-jam" value="' + esc((x.jam || '').slice(0, 5)) + '">' +
+      '<label>Ruangan asal</label><select id="e-ruang">' + opsi(S.ruang.map(function (r) { return [r.id, r.nama]; }), x.ruangan_id) + '</select>' +
+      '<label>Kode limbah</label><select id="e-kode">' + opsi(S.master.map(function (m) { return [m.kode, m.kode + ' - ' + m.nama]; }), x.kode_limbah) + '</select>' +
+      '<label>Nama barang</label><input id="e-nama" value="' + esc(x.nama_limbah || '') + '">' +
+      '<label>Berat (kg)</label><input type="number" step="any" inputmode="decimal" id="e-berat" value="' + esc(x.berat_kg) + '">' +
+      '<label>TPS</label><select id="e-tps">' + opsi(S.tps.map(function (t) { return [t.id, t.nama]; }), x.tps_id) + '</select>' +
+      '<label>Suhu penyimpanan</label><select id="e-suhu">' + opsi(SUHU, x.suhu) + '</select>' +
+      '<label>ID kantong / safety box</label><input id="e-kantong" value="' + esc(x.id_kantong || '') + '">' +
+      '<button type="button" data-a="simpan" data-id="' + x.id + '">Simpan perubahan</button>' +
+      '<button type="button" style="' + G1 + '" data-a="batal">Batal</button>' +
+      '<div class="pesan" id="e-pesan"></div></div>';
+  }
+
+  async function muatDaftar(pesan) {
     var box = $('l-daftar');
+    if (!box) return;
+    var r = await App.db.from('limbah_harian').select('*, ruangan(nama), tps(nama)')
+      .eq('tanggal', tglLokal(new Date())).order('dibuat', { ascending: false });
     if (r.error) { box.innerHTML = '<p class="muted">Gagal memuat catatan.</p>'; return; }
-    if (!r.data.length) { box.innerHTML = '<p class="muted">Belum ada catatan hari ini.</p>'; return; }
+    S.rows = {};
     var total = 0;
-    var html = r.data.map(function (x) {
+    var isi = r.data.map(function (x) {
+      S.rows[x.id] = x;
       total += Number(x.berat_kg);
+      var aksi = x.status === 'disimpan'
+        ? '<div data-box="' + x.id + '"><button type="button" style="' + G1 + '" data-a="ubah" data-id="' + x.id + '">Ubah</button>' +
+          '<button type="button" style="' + G2 + '" data-a="hapus" data-id="' + x.id + '">Hapus</button></div>'
+        : '<br><span class="muted">Sudah diangkut, data dikunci.</span>';
       return '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + fmtBerat(x.berat_kg) + ' · ' + esc((x.jam || '').slice(0, 5)) +
-        '<br>' + esc(x.nama_limbah || '') + '<br><span class="muted">' + esc(x.ruangan ? x.ruangan.nama : '-') + ' → ' + esc(x.tps ? x.tps.nama : '-') + '</span></div>';
+        '<br>' + esc(x.nama_limbah || '') + '<br><span class="muted">' + esc(x.ruangan ? x.ruangan.nama : '-') + ' → ' + esc(x.tps ? x.tps.nama : '-') + '</span>' + aksi + '</div>';
     }).join('');
-    box.innerHTML = '<p class="ok">Total hari ini: ' + fmtBerat(total) + '</p>' + html;
+    var html = (pesan ? '<div class="pesan" style="color:#0F6E5C">' + esc(pesan) + '</div>' : '') +
+      (r.data.length ? '<p class="ok">Total hari ini: ' + fmtBerat(total) + '</p>' + isi : '<p class="muted">Belum ada catatan hari ini.</p>');
+
+    if (['admin_fasyankes', 'petugas_kesling'].indexOf(App.profil.peran) > -1) {
+      var awal = new Date(tglLokal(new Date()) + 'T00:00:00').toISOString();
+      var h = await App.db.from('riwayat').select('id, dibuat, sebelum').eq('tabel', 'limbah_harian').eq('aksi', 'hapus permanen')
+        .is('detail', null).gte('dibuat', awal).order('dibuat', { ascending: false });
+      if (h.data && h.data.length) {
+        html += '<h3>Dihapus hari ini</h3>' + h.data.map(function (d) {
+          var s = d.sebelum || {};
+          return '<div class="baris" style="opacity:.7"><b>' + esc(s.kode_limbah || '') + '</b> · ' + fmtBerat(s.berat_kg) +
+            '<br><span class="muted">Dihapus ' + esc(fmtWaktu(d.dibuat)) + '</span>' +
+            '<br><button type="button" style="' + G1 + '" data-a="pulih" data-r="' + d.id + '">Pulihkan</button></div>';
+        }).join('');
+      }
+    }
+    box.innerHTML = html;
+  }
+
+  async function aksiDaftar(e) {
+    var b = e.target.closest ? e.target.closest('[data-a]') : null;
+    if (!b) return;
+    var a = b.dataset.a, id = b.dataset.id, x = S.rows[id];
+    var wadah = id ? document.querySelector('[data-box="' + id + '"]') : null;
+
+    if (a === 'batal') { muatDaftar(); return; }
+    if (a === 'ubah' && x && wadah) {
+      var terbuka = document.getElementById('e-tgl');
+      if (terbuka) { await muatDaftar(); wadah = document.querySelector('[data-box="' + id + '"]'); }
+      if (wadah) wadah.innerHTML = formUbah(x);
+      return;
+    }
+    if (a === 'hapus' && wadah) {
+      wadah.innerHTML = '<b>Yakin hapus catatan ini?</b><br>' +
+        '<button type="button" style="' + G2 + '" data-a="ya-hapus" data-id="' + id + '">Ya, hapus</button>' +
+        '<button type="button" style="' + G1 + '" data-a="batal">Batal</button>';
+      return;
+    }
+    if (a === 'ya-hapus') {
+      var d = await App.db.rpc('hapus_limbah', { p_id: id });
+      cache = {};
+      muatDaftar(d.error ? 'Gagal: ' + d.error.message : 'Catatan dihapus.');
+      return;
+    }
+    if (a === 'pulih') {
+      var p = await App.db.rpc('pulihkan_limbah', { p_riwayat: b.dataset.r });
+      cache = {};
+      muatDaftar(p.error ? 'Gagal: ' + p.error.message : 'Catatan dipulihkan.');
+      return;
+    }
+    if (a === 'simpan' && x) {
+      var ps = $('e-pesan');
+      var kode = $('e-kode').value, m = S.master.filter(function (k) { return k.kode === kode; })[0];
+      var berat = Math.round(Number($('e-berat').value) * 1000) / 1000;
+      var tgl = $('e-tgl').value, jam = $('e-jam').value, suhu = $('e-suhu').value;
+      if (!tgl || !jam) { ps.textContent = 'Tanggal dan jam wajib diisi.'; return; }
+      if (!(berat > 0)) { ps.textContent = 'Isi berat dengan benar (minimal 0,001 kg).'; return; }
+      if (!m) { ps.textContent = 'Kode limbah tidak dikenal.'; return; }
+      var koreksi = x.kode_limbah === kode ? Number(x.berat_kg) : 0;
+      var h = await hitungBatas(m, berat - koreksi, tgl, jam, suhu);
+      var u = await App.db.from('limbah_harian').update({
+        tanggal: tgl, jam: jam, ruangan_id: $('e-ruang').value, kode_limbah: kode,
+        nama_limbah: $('e-nama').value.trim() || m.nama, berat_kg: berat, tps_id: $('e-tps').value,
+        suhu: suhu, batas_simpan: h.iso, id_kantong: $('e-kantong').value.trim() || null
+      }).eq('id', id);
+      if (u.error) { ps.textContent = 'Gagal menyimpan: ' + u.error.message; return; }
+      cache = {};
+      muatDaftar('Perubahan disimpan.' + (h.iso ? ' Batas simpan baru: ' + fmtWaktu(h.iso) : ''));
+    }
   }
 
   App.tabs.catat = async function (el) {
@@ -119,6 +215,7 @@
     S.master = pilihTerbaru(r[0].data, hari);
     S.items = r[3].data;
     S.tps = r[2].data;
+    S.ruang = r[1].data;
     S.kode = null;
     if (!r[1].data.length || !S.tps.length) {
       el.innerHTML = '<div class="info waspada">Ruangan atau TPS belum diisi.</div>';
@@ -150,6 +247,7 @@
       '<h3>Catatan hari ini</h3><div id="l-daftar"></div>';
 
     $('l-satuan').value = App.satuan;
+    $('l-daftar').onclick = aksiDaftar;
 
     function setSuhuDariTps() {
       var t = S.tps.filter(function (x) { return x.id === $('l-tps').value; })[0];

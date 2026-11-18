@@ -1,4 +1,7 @@
 (function () {
+  var G1 = 'width:auto;display:inline-block;padding:6px 14px;margin:6px 6px 0 0;font-size:14px';
+  var G2 = G1 + ';background:#fff;color:#a33;border:1px solid #a33';
+
   function lewat(d) { return d && d < tglLokal(new Date()); }
 
   function statusBatas(iso) {
@@ -20,13 +23,14 @@
     $('a-ringkas').innerHTML = total > 0 ? 'Dipilih: <b>' + fmtBerat(total) + '</b><br>' + esc(teks) : 'Belum ada limbah dipilih.';
   }
 
-  App.tabs.angkut = async function (el) {
+  App.tabs.angkut = async function (el, pesanAwal) {
     var peran = App.profil.peran;
     if (peran === 'admin_papkenz') {
       el.innerHTML = '<div class="info">Data pengangkutan milik fasyankes. Gunakan akun fasyankes.</div>';
       return;
     }
     var bisa = ['admin_fasyankes', 'petugas_kesling'].indexOf(peran) >= 0;
+    var admin = peran === 'admin_fasyankes';
     el.innerHTML = '<p class="muted">Memuat...</p>';
 
     var r = await Promise.all([
@@ -35,7 +39,7 @@
         .select('id, tanggal, jam, kode_limbah, nama_limbah, berat_kg, batas_simpan, id_kantong, ruangan(nama), tps(nama)')
         .eq('status', 'disimpan').order('kode_limbah').order('tanggal'),
       App.db.from('limbah_angkut')
-        .select('tanggal, kode_limbah, berat_kg, no_manifest, vendor(nama)')
+        .select('id, tanggal, kode_limbah, berat_kg, no_manifest, vendor(nama)')
         .order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(20)
     ]);
     if (r[0].error || r[1].error || r[2].error) {
@@ -83,13 +87,36 @@
       html += '<div class="info">Peran Anda hanya bisa melihat data.</div>';
     }
 
-    html += '<h3>Riwayat pengangkutan</h3>';
+    html += '<h3>Riwayat pengangkutan</h3><div class="pesan" id="a-pesan2" style="color:#0F6E5C">' + esc(pesanAwal || '') + '</div><div id="a-riwayat">';
     if (!r[2].data.length) html += '<p class="muted">Belum ada pengangkutan.</p>';
     r[2].data.forEach(function (x) {
       html += '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + fmtBerat(x.berat_kg) + ' · ' + esc(x.tanggal) +
-        '<br>Manifest: ' + esc(x.no_manifest || '-') + '<br><span class="muted">' + esc(x.vendor ? x.vendor.nama : '-') + '</span></div>';
+        '<br>Manifest: ' + esc(x.no_manifest || '-') + '<br><span class="muted">' + esc(x.vendor ? x.vendor.nama : '-') + '</span>' +
+        (admin ? '<div data-abox="' + x.id + '"><button type="button" style="' + G2 + '" data-a="batal" data-id="' + x.id + '">Batalkan pengangkutan</button></div>' : '') +
+        '</div>';
     });
+    html += '</div>';
     el.innerHTML = html;
+
+    if (admin) {
+      $('a-riwayat').onclick = async function (e) {
+        var b = e.target.closest ? e.target.closest('[data-a]') : null;
+        if (!b) return;
+        var id = b.dataset.id, w = document.querySelector('[data-abox="' + id + '"]');
+        if (!w) return;
+        if (b.dataset.a === 'batal') {
+          w.innerHTML = '<b>Batalkan pengangkutan ini? Limbahnya kembali berstatus disimpan.</b><br>' +
+            '<button type="button" style="' + G2 + '" data-a="ya" data-id="' + id + '">Ya, batalkan</button>' +
+            '<button type="button" style="' + G1 + '" data-a="tidak" data-id="' + id + '">Tidak</button>';
+        } else if (b.dataset.a === 'tidak') {
+          App.tabs.angkut(el);
+        } else if (b.dataset.a === 'ya') {
+          var res = await App.db.rpc('batal_pengangkutan', { p_angkut: id });
+          if (res.error) { w.innerHTML = '<div class="pesan">Gagal: ' + esc(res.error.message) + '</div>'; return; }
+          App.tabs.angkut(el, 'Pengangkutan dibatalkan, ' + res.data + ' catatan limbah kembali disimpan.');
+        }
+      };
+    }
 
     if (!bisa) return;
     document.querySelectorAll('[data-semua]').forEach(function (b) {
