@@ -14,8 +14,11 @@ function fmtWaktu(iso) {
   return new Date(iso).toLocaleString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 function fmtBerat(kg) {
-  var v = Number(kg) || 0;
-  return App.satuan === 'ton' ? (v / 1000).toFixed(4) + ' ton' : v.toFixed(3) + ' kg';
+  var n = Number(kg) || 0;
+  if (App.satuan === 'ton') {
+    return (n / 1000).toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 4 }) + ' ton';
+  }
+  return n.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 3 }) + ' kg';
 }
 function tampil(layar) {
   $('layar-login').hidden = layar !== 'login';
