@@ -220,4 +220,30 @@
         '<br><span class="muted">' + PILAR.map(function (p, i) { return 'P' + (i + 1) + (x[p[0]] === true ? '✓' : (x[p[0]] === false ? '✗' : '-')); }).join(' ') + '</span>';
     }
   });
+  // ===== PENGAWASAN FASYANKES (linen, dekontaminasi, KTR, pengaduan) =====
+  var ST_AWAS = [['terbuka', 'Belum selesai'], ['selesai', 'Selesai']];
+  crud({
+    tab: 'rs_pengawasan', judul: 'Pengawasan kesehatan lingkungan fasyankes', tabel: 'pengawasan', urut: 'tanggal', naik: false, kategori: 'rs',
+    info: 'Catat hasil pengawasan rutin dan pengaduan. Rumah sakit wajib memberlakukan seluruh lingkungannya sebagai kawasan tanpa rokok (Permenkes 6/2026 Pasal 36 ayat (1) huruf t). Penatalaksanaan linen dan dekontaminasi mengacu pada Permenkes 27/2017 tentang PPI. Temuan yang belum selesai otomatis masuk daftar temuan.',
+    bidang: [
+      { k: 'tanggal', l: 'Tanggal', tipe: 'tanggal', wajib: true, awal: 'hari' },
+      { k: 'jenis', l: 'Jenis pengawasan', tipe: 'pilih', wajib: true, opsi: ['Penatalaksanaan linen', 'Dekontaminasi / desinfeksi ruangan', 'Kawasan tanpa rokok', 'Pengaduan masyarakat', 'Kebersihan lingkungan', 'Lainnya'] },
+      { k: 'lokasi', l: 'Lokasi', tipe: 'teks', wajib: true, contoh: 'mis. Laundry, ruang rawat inap' },
+      { k: 'temuan', l: 'Temuan / isi pengaduan', tipe: 'teks', wajib: true },
+      { k: 'tindakan', l: 'Tindakan', tipe: 'teks' },
+      { k: 'status', l: 'Status', tipe: 'pilih', wajib: true, opsi: ST_AWAS }
+    ],
+    ringkas: function (x) {
+      return '<b>' + esc(x.jenis || '-') + '</b> · ' + esc(x.lokasi || '-') + ' · ' + (x.status === 'selesai' ? '<span class="ok">selesai</span>' : '<span class="lewat">belum selesai</span>') +
+        '<br><span class="muted">' + esc(x.tanggal || '') + '</span><br>' + esc(x.temuan || '') + (x.tindakan ? '<br><span class="muted">Tindakan: ' + esc(x.tindakan) + '</span>' : '');
+    },
+    setelah: async function (d, id) {
+      if (!id || !window.TL) return '';
+      if (d.status === 'selesai') {
+        await App.db.from('temuan').update({ status: 'selesai', tindakan: d.tindakan || 'Selesai', tanggal_selesai: hariIni() }).eq('sumber', 'pengawasan').eq('sumber_id', id).eq('status', 'terbuka');
+        return '';
+      }
+      return temuanSekali('rs', 'pengawasan', id, { lokasi: d.lokasi, parameter: d.jenis, hasil: d.temuan, uraian: 'perlu ditindaklanjuti' });
+    }
+  });
 })();

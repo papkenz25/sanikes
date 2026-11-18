@@ -47,11 +47,17 @@ function pasangSatuan() {
 }
 
 async function masukApp(user) {
-  var p = await App.db.from('profil').select('nama, peran, fasyankes_id, fasyankes(nama)').eq('id', user.id).maybeSingle();
+  var p = await App.db.from('profil').select('id, nama, peran, aktif, fasyankes_id, fasyankes(nama)').eq('id', user.id).maybeSingle();
   if (p.error || !p.data) {
     await App.db.auth.signOut();
     tampil('login');
     $('pesan-login').textContent = 'Profil pengguna belum terdaftar.';
+    return;
+  }
+  if (p.data.aktif === false) {
+    await App.db.auth.signOut();
+    tampil('login');
+    $('pesan-login').textContent = 'Akun Anda dinonaktifkan. Hubungi admin fasyankes.';
     return;
   }
   App.profil = p.data;

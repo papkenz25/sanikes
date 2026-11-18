@@ -40,6 +40,9 @@
       '<div class="info">Nama: <b>' + esc(p.nama || '-') + '</b><br>Peran: ' + esc(NAMA_PERAN[p.peran] || p.peran || '-') +
       '<br>Fasyankes: ' + esc((p.fasyankes && p.fasyankes.nama) || '-') + '<br>Email: <b>' + esc(user.email || '-') + '</b>' + menunggu + '</div>' +
 
+      ((p.peran === 'admin_fasyankes' || p.peran === 'admin_papkenz') ? '<button type="button" id="ak-pengguna">Kelola pengguna dan data fasyankes</button>' : '') +
+      '<h3>Ubah nama</h3><label>Nama lengkap</label><input id="ak-nama" value="' + esc(p.nama || '') + '">' +
+      '<button type="button" id="ak-simpan-nama">Simpan nama</button><div class="pesan" id="ak-pesan-nama"></div>' +
       '<h3>Ubah kata sandi</h3>' +
       '<label>Kata sandi saat ini</label><input type="password" id="ak-lama" autocomplete="current-password">' +
       '<label>Kata sandi baru (minimal 8 karakter)</label><input type="password" id="ak-baru" autocomplete="new-password">' +
@@ -52,6 +55,17 @@
       '<label>Kata sandi saat ini</label><input type="password" id="ak-sandi-email" autocomplete="current-password">' +
       '<button type="button" id="ak-simpan-email">Kirim konfirmasi email baru</button><div class="pesan" id="ak-pesan-email"></div>';
 
+    if ($('ak-pengguna')) $('ak-pengguna').onclick = function () { App.tabs.pengguna(el); };
+    $('ak-simpan-nama').addEventListener('click', async function () {
+      var nama = $('ak-nama').value.trim(), ps = $('ak-pesan-nama');
+      ps.style.color = '';
+      if (!nama) { ps.textContent = 'Nama wajib diisi.'; return; }
+      var r = await App.db.rpc('ubah_nama_saya', { p_nama: nama });
+      if (r.error) { ps.textContent = 'Gagal: ' + r.error.message; return; }
+      App.profil.nama = nama;
+      ps.style.color = '#0F6E5C';
+      ps.textContent = 'Nama tersimpan.';
+    });
     $('ak-simpan-sandi').addEventListener('click', async function () {
       var ps = $('ak-pesan-sandi'), lama = $('ak-lama').value, baru = $('ak-baru').value, ulang = $('ak-ulang').value;
       ps.style.color = '';

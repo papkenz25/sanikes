@@ -6,7 +6,7 @@
     ['udara', 'Udara ruangan', true],
     ['tpm', 'Pangan (TPM & Gizi)', true],
     ['k3', 'K3 Fasyankes', true],
-    ['rs', 'Pengawasan RS', false],
+    ['rs', 'Pengawasan fasyankes', true],
     ['pkm', 'Kesling Puskesmas', true],
     ['kit', 'Alat sanitarian & merkuri', true]
   ];
@@ -35,6 +35,9 @@
       ['k3_insiden', 'Insiden K3', 'kecelakaan, tertusuk jarum, tumpahan'],
       ['k3_semester', 'Laporan semester K3', 'format Permenkes 52/2018'],
       ['k3_tahunan', 'Laporan tahunan K3', 'checklist Ada / Tidak']
+    ] },
+    rs: { judul: 'Pengawasan fasyankes', isi: [
+      ['rs_pengawasan', 'Pengawasan dan pengaduan', 'linen, dekontaminasi, KTR, pengaduan']
     ] },
     pkm: { judul: 'Kesling Puskesmas', isi: [
       ['ttu_cek', 'Inspeksi TFU / TTU', 'sekolah, ibadah, pasar, hotel'],

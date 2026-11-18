@@ -12,7 +12,7 @@
 
   App.tabs.laporan = function (el) {
     if (!periode) { var n = new Date(); periode = { dari: awalBulan(n), sampai: tglLokal(n) }; }
-    var menu = [['neraca', 'Neraca limbah'], ['ekspor', 'Ekspor']].map(function (x) {
+    var menu = [['terpadu', 'Laporan bulanan'], ['neraca', 'Neraca limbah'], ['ekspor', 'Ekspor']].map(function (x) {
       return '<button type="button" class="chip' + (x[0] === bagian ? ' aktif' : '') + '" data-b="' + x[0] + '">' + x[1] + '</button>';
     }).join('');
     el.innerHTML = '<h3 class="noprint" style="margin-top:0">Laporan</h3><div class="chips noprint" id="lp-menu">' + menu + '</div><div id="lp-isi"></div>';
