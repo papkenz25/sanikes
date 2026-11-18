@@ -2,7 +2,7 @@
   var DAFTAR = [
     ['limbah', 'Limbah B3', true],
     ['air', 'Air & IPAL', true],
-    ['vektor', 'Vektor & Sanitasi', false],
+    ['vektor', 'Vektor & Sanitasi', true],
     ['tpm', 'TPM & Gizi', false],
     ['k3', 'APD & K3', false],
     ['rs', 'Pengawasan RS', false],
