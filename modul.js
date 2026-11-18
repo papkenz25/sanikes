@@ -7,8 +7,8 @@
     ['tpm', 'Pangan (TPM & Gizi)', true],
     ['k3', 'K3 Fasyankes', true],
     ['rs', 'Pengawasan RS', false],
-    ['pkm', 'Kesling Puskesmas', false],
-    ['kit', 'Sanitarian Kit & Alkes', false]
+    ['pkm', 'Kesling Puskesmas', true],
+    ['kit', 'Alat sanitarian & merkuri', true]
   ];
 
   var SUB = {
@@ -28,12 +28,20 @@
       ['sanitasi_cek', 'Inspeksi sanitasi bangunan', 'per ruangan / seluruh bangunan']
     ] },
     tpm: { judul: 'Pangan (TPM & Gizi)', isi: [
-      ['tpm_cek', 'Inspeksi TPP', 'dapur, instalasi gizi, kantin']
+      ['tpm_cek', 'Inspeksi TPP', 'dapur, instalasi gizi, kantin'],
+      ['tpm_penjamah', 'Penjamah pangan', 'sertifikat, pemeriksaan kesehatan']
     ] },
     k3: { judul: 'K3 Fasyankes', isi: [
       ['k3_insiden', 'Insiden K3', 'kecelakaan, tertusuk jarum, tumpahan'],
       ['k3_semester', 'Laporan semester K3', 'format Permenkes 52/2018'],
       ['k3_tahunan', 'Laporan tahunan K3', 'checklist Ada / Tidak']
+    ] },
+    pkm: { judul: 'Kesling Puskesmas', isi: [
+      ['pkm_stbm', 'STBM 5 pilar', 'per KK, rekap per desa']
+    ] },
+    kit: { judul: 'Alat sanitarian & merkuri', isi: [
+      ['kit_alat', 'Alat dan kalibrasi', 'jadwal kalibrasi'],
+      ['kit_merkuri', 'Alkes bermerkuri', 'Permenkes 41/2019']
     ] },
     udara: { judul: 'Udara ruangan', isi: [
       ['udara_ukur', 'Pengukuran udara', 'suhu, cahaya, bising, kuman']

@@ -1,6 +1,6 @@
 (function () {
-  var NAMA_KAT = { air: 'Air', ipal: 'IPAL', vektor: 'Vektor', udara: 'Udara ruangan', sanitasi: 'Sanitasi', tpm: 'Pangan', k3: 'K3' };
-  var MODUL_KAT = { air: 'air_uji', ipal: 'ipal_lab', vektor: 'vektor_catat', udara: 'udara_ukur', sanitasi: 'sanitasi_cek', tpm: 'tpm_cek', k3: 'k3_insiden' };
+  var NAMA_KAT = { air: 'Air', ipal: 'IPAL', vektor: 'Vektor', udara: 'Udara ruangan', sanitasi: 'Sanitasi', tpm: 'Pangan', k3: 'K3', merkuri: 'Alkes merkuri' };
+  var MODUL_KAT = { air: 'air_uji', ipal: 'ipal_lab', vektor: 'vektor_catat', udara: 'udara_ukur', sanitasi: 'sanitasi_cek', tpm: 'tpm_cek', k3: 'k3_insiden', merkuri: 'kit_merkuri' };
 
   function hariIni() { return tglLokal(new Date()); }
   function tambahHari(n) { var d = new Date(); d.setDate(d.getDate() + n); return tglLokal(d); }
@@ -32,8 +32,8 @@
         .not('batas_simpan', 'is', null).order('batas_simpan', { ascending: true }).limit(5)),
       aman(App.db.from('temuan').select('kategori').eq('status', 'terbuka')),
       aman(App.db.from('vendor').select('nama, izin_berakhir, mou_berakhir').eq('aktif', true)),
-      aman(App.db.from('penjamah').select('nama, sertifikat_berakhir').eq('aktif', true).not('sertifikat_berakhir', 'is', null).lte('sertifikat_berakhir', batas30)),
-      aman(App.db.from('sanitarian_kit').select('nama_alat, kalibrasi_berikutnya').not('kalibrasi_berikutnya', 'is', null).lte('kalibrasi_berikutnya', batas30)),
+      aman(App.db.from('penjamah').select('nama, sertifikat_berakhir, tgl_periksa_kesehatan').eq('aktif', true).is('dihapus', null)),
+      aman(App.db.from('sanitarian_kit').select('nama_alat, kalibrasi_berikutnya').is('dihapus', null).not('kalibrasi_berikutnya', 'is', null).lte('kalibrasi_berikutnya', batas30)),
       aman(App.db.from('ipal_harian').select('tanggal').is('dihapus', null).order('tanggal', { ascending: false }).limit(1)),
       aman(App.db.from('pengaturan').select('kunci, nilai').eq('kunci', 'kelas_ipal'))
     ]);
@@ -59,7 +59,10 @@
       });
     });
     (r[4].data || []).forEach(function (x) {
-      perhatian.push('<div class="baris">Sertifikat penjamah <b>' + esc(x.nama) + '</b> berakhir ' + esc(x.sertifikat_berakhir) + ' · ' + labelSisa(x.sertifikat_berakhir) + '</div>');
+      if (x.sertifikat_berakhir && x.sertifikat_berakhir <= batas30)
+        perhatian.push('<div class="baris">Sertifikat penjamah <b>' + esc(x.nama) + '</b> berakhir ' + esc(x.sertifikat_berakhir) + ' · ' + labelSisa(x.sertifikat_berakhir) + '</div>');
+      if (!x.tgl_periksa_kesehatan || sisaHari(x.tgl_periksa_kesehatan) < -365)
+        perhatian.push('<div class="baris">Penjamah <b>' + esc(x.nama) + '</b> perlu pemeriksaan kesehatan (minimal 1 kali setahun)</div>');
     });
     (r[5].data || []).forEach(function (x) {
       perhatian.push('<div class="baris">Kalibrasi <b>' + esc(x.nama_alat) + '</b> jatuh tempo ' + esc(x.kalibrasi_berikutnya) + ' · ' + labelSisa(x.kalibrasi_berikutnya) + '</div>');
