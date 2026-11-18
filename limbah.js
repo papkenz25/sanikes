@@ -3,6 +3,13 @@
   var cache = {};
   var S = { master: [], items: [], tps: [], kode: null, token: 0 };
 
+  function beratKg() {
+    var v = parseFloat($('l-berat').value);
+    if (!(v > 0)) return NaN;
+    var kg = $('l-satuan').value === 'ton' ? v * 1000 : v;
+    return Math.round(kg * 1000) / 1000;
+  }
+
   function pilihTerbaru(rows, hari) {
     var m = {};
     rows.forEach(function (r) {
@@ -45,7 +52,7 @@
 
   async function segarkanBatas() {
     var box = $('l-batas');
-    var berat = parseFloat($('l-berat').value);
+    var berat = beratKg();
     if (!S.kode || !(berat > 0)) { box.className = 'info'; box.textContent = 'Pilih kode limbah dan isi berat untuk melihat batas simpan.'; return; }
     var tok = ++S.token;
     var h = await hitungBatas(S.kode, berat, $('l-tgl').value, $('l-jam').value, $('l-suhu').value);
@@ -85,10 +92,10 @@
     var total = 0;
     var html = r.data.map(function (x) {
       total += Number(x.berat_kg);
-      return '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + Number(x.berat_kg).toFixed(3) + ' kg · ' + esc((x.jam || '').slice(0, 5)) +
+      return '<div class="baris"><b>' + esc(x.kode_limbah) + '</b> · ' + fmtBerat(x.berat_kg) + ' · ' + esc((x.jam || '').slice(0, 5)) +
         '<br>' + esc(x.nama_limbah || '') + '<br><span class="muted">' + esc(x.ruangan ? x.ruangan.nama : '-') + ' → ' + esc(x.tps ? x.tps.nama : '-') + '</span></div>';
     }).join('');
-    box.innerHTML = '<p class="ok">Total hari ini: ' + total.toFixed(3) + ' kg</p>' + html;
+    box.innerHTML = '<p class="ok">Total hari ini: ' + fmtBerat(total) + '</p>' + html;
   }
 
   App.tabs.catat = async function (el) {
@@ -132,7 +139,7 @@
       '<label>Kode limbah</label><div class="chips" id="l-chips">' + chips + '</div>' +
       '<div id="l-info-kode" class="info">Pilih kode limbah di atas.</div>' +
       '<label>Nama barang (opsional)</label><input id="l-nama" list="l-daftar-nama" autocomplete="off"><datalist id="l-daftar-nama"></datalist>' +
-      '<label>Berat (kg)</label><input type="number" id="l-berat" step="0.001" min="0.001" inputmode="decimal" required>' +
+      '<label>Berat</label><div style="display:flex;gap:8px"><input type="number" id="l-berat" step="any" min="0" inputmode="decimal" required style="flex:1"><select id="l-satuan" style="width:96px"><option value="kg">kg</option><option value="ton">ton</option></select></div>' +
       '<label>TPS tujuan</label><select id="l-tps" required>' + opsiTps + '</select>' +
       '<label>Suhu penyimpanan</label><select id="l-suhu"><option value="ruang">Suhu ruang</option><option value="pendingin">Pendingin (0-5 C)</option><option value="beku">Beku (0 C atau kurang)</option></select>' +
       '<label>ID kantong / safety box (opsional)</label><input id="l-kantong">' +
@@ -141,6 +148,8 @@
       '<div class="pesan" id="l-pesan"></div>' +
       '</form>' +
       '<h3>Catatan hari ini</h3><div id="l-daftar"></div>';
+
+    $('l-satuan').value = App.satuan;
 
     function setSuhuDariTps() {
       var t = S.tps.filter(function (x) { return x.id === $('l-tps').value; })[0];
@@ -153,7 +162,7 @@
       if (c) pilihKode(c.dataset.kode);
     });
     $('l-tps').addEventListener('change', function () { setSuhuDariTps(); segarkanBatas(); });
-    ['l-berat', 'l-suhu', 'l-tgl', 'l-jam'].forEach(function (id) {
+    ['l-berat', 'l-satuan', 'l-suhu', 'l-tgl', 'l-jam'].forEach(function (id) {
       $(id).addEventListener('input', segarkanBatas);
     });
 
@@ -163,8 +172,8 @@
       pesan.style.color = '';
       pesan.textContent = '';
       if (!S.kode) { pesan.textContent = 'Pilih kode limbah dulu.'; return; }
-      var berat = parseFloat($('l-berat').value);
-      if (!(berat > 0)) { pesan.textContent = 'Isi berat dengan benar.'; return; }
+      var berat = beratKg();
+      if (!(berat > 0)) { pesan.textContent = 'Isi berat dengan benar (minimal 0,001 kg).'; return; }
       $('l-simpan').disabled = true;
       var h = await hitungBatas(S.kode, berat, $('l-tgl').value, $('l-jam').value, $('l-suhu').value);
       var res = await App.db.from('limbah_harian').insert({
