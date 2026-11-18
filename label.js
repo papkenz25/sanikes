@@ -30,8 +30,10 @@
 
   function buka(r, m, namaRuangan) {
     tutup();
-    var warna = String((m && m.warna) || '').toLowerCase();
-    var hex = HEX[warna] || '#777777';
+    var kunci = m ? Object.keys(m).filter(function (k) { return /warna|color|wadah/i.test(k); })[0] : null;
+    var warna = String((m && kunci && m[kunci]) || '').toLowerCase();
+    var hex = '#777777';
+    Object.keys(HEX).forEach(function (k) { if (warna.indexOf(k) > -1) hex = HEX[k]; });
     var kg = fmtBerat(r.berat_kg);
     var o = document.createElement('div');
     o.id = 'lbl-overlay';
