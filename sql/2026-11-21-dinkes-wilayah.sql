@@ -2,6 +2,13 @@
 -- Cara kerja: aturan akses lama TIDAK diubah. Ditambah satu aturan "baca_wilayah" (hanya SELECT)
 -- di tiap tabel data. Karena Dinkes tidak punya aturan tambah/ubah/hapus, Dinkes tidak bisa menulis apa pun.
 
+-- 0. PERBAIKAN KEAMANAN PENTING: akun tanpa profil (daftar sendiri) dulu mendapat peran NULL,
+-- sehingga pemeriksaan "peran <> 'admin_papkenz'" bernilai NULL dan lolos. Sekarang peran kosong = ''.
+create or replace function private.peran_saya()
+returns text language sql stable security definer set search_path = '' as $$
+  select coalesce((select peran from public.profil where id = (select auth.uid()) and aktif), '')
+$$;
+
 -- 1. Tabel wilayah dan kolom baru
 create table if not exists public.wilayah (
   id uuid primary key default gen_random_uuid(),
@@ -199,4 +206,5 @@ end $$;
 
 
 -- 5. Cek: jumlah tabel yang punya aturan baca_wilayah (harus sama dengan jumlah tabel data + 1)
-select count(*) as tabel_baca_wilayah from pg_policies where schemaname = 'public' and policyname = 'baca_wilayah';
+select (select count(*) from pg_policies where schemaname = 'public' and policyname = 'baca_wilayah') as tabel_baca_wilayah,
+  (select private.peran_saya()) as peran_editor_sql;
