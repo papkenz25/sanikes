@@ -18,12 +18,13 @@
     return n ? s / n : null;
   }
 
-  App.laporan.terpadu = async function (el) {
-    if (App.profil.peran === 'admin_papkenz') { el.innerHTML = '<div class="info">Laporan milik fasyankes. Gunakan akun fasyankes.</div>'; return; }
+  App.laporan.terpadu = async function (el, fidLuar, blAwal, thAwal) {
+    var fid = fidLuar || App.profil.fasyankes_id;
+    if (!fid) { el.innerHTML = '<div class="info">Laporan milik fasyankes. Gunakan akun fasyankes.</div>'; return; }
     var kini = new Date();
     el.innerHTML = '<div class="noprint"><label>Bulan</label><select id="lt-bln">' +
-      BULAN.map(function (b, i) { return '<option value="' + i + '"' + (i === kini.getMonth() ? ' selected' : '') + '>' + b + '</option>'; }).join('') +
-      '</select><label>Tahun</label><input type="number" id="lt-th" value="' + kini.getFullYear() + '">' +
+      BULAN.map(function (b, i) { return '<option value="' + i + '"' + (i === (blAwal != null ? blAwal : kini.getMonth()) ? ' selected' : '') + '>' + b + '</option>'; }).join('') +
+      '</select><label>Tahun</label><input type="number" id="lt-th" value="' + (thAwal || kini.getFullYear()) + '">' +
       '<button type="button" id="lt-buka">Tampilkan laporan</button></div><div id="lt-isi"></div>';
 
     async function buka() {
@@ -31,7 +32,7 @@
       var dari = tglLokal(new Date(th, bl, 1)), sampai = tglLokal(new Date(th, bl + 1, 0));
       var awalIso = new Date(th, bl, 1).toISOString(), akhirIso = new Date(th, bl + 1, 1).toISOString();
       $('lt-isi').innerHTML = '<p class="muted">Menyusun laporan...</p>';
-      function rentang(t, kol) { return App.db.from(t).select('*').gte(kol || 'tanggal', dari).lte(kol || 'tanggal', sampai); }
+      function rentang(t, kol) { return App.db.from(t).select('*').eq('fasyankes_id', fid).gte(kol || 'tanggal', dari).lte(kol || 'tanggal', sampai); }
       function bersih(t, kol) {
         return rentang(t, kol).is('dihapus', null).then(function (r) { return r.error ? rentang(t, kol) : r; });
       }
@@ -48,9 +49,9 @@
         aman(bersih('tpm_inspeksi')),
         aman(bersih('ikl_inspeksi')),
         aman(bersih('k3_insiden')),
-        aman(App.db.from('temuan').select('kategori, status, dibuat, tanggal_selesai').gte('dibuat', awalIso).lt('dibuat', akhirIso)),
-        aman(App.db.from('temuan').select('kategori').eq('status', 'terbuka')),
-        aman(App.db.from('fasyankes').select('*').eq('id', App.profil.fasyankes_id).maybeSingle()),
+        aman(App.db.from('temuan').select('kategori, status, dibuat, tanggal_selesai').eq('fasyankes_id', fid).gte('dibuat', awalIso).lt('dibuat', akhirIso)),
+        aman(App.db.from('temuan').select('kategori').eq('fasyankes_id', fid).eq('status', 'terbuka')),
+        aman(App.db.from('fasyankes').select('*').eq('id', fid).maybeSingle()),
         aman(App.db.from('master_limbah').select('kode, nama'))
       ]);
       var f = r[13].data || {};
@@ -129,7 +130,7 @@
       // Tanda tangan
       h += '<div style="display:flex;justify-content:space-between;margin-top:32px"><div>Mengetahui,<br>Pimpinan<br><br><br><b>' + esc(f.nama_pimpinan || '....................') + '</b>' +
         (f.nip_nik_pimpinan ? '<br>NIP/NIK ' + esc(f.nip_nik_pimpinan) : '') + '</div>' +
-        '<div>Penanggung jawab kesehatan lingkungan<br><br><br><br><b>' + esc(App.profil.nama || '....................') + '</b></div></div>' +
+        '<div>Penanggung jawab kesehatan lingkungan<br><br><br><br><b>' + esc(fidLuar ? '....................' : (App.profil.nama || '....................')) + '</b></div></div>' +
         '<button type="button" class="noprint" id="lt-cetak" style="margin-top:16px">Cetak / simpan PDF</button>';
       $('lt-isi').innerHTML = h;
       $('lt-cetak').onclick = function () { window.print(); };

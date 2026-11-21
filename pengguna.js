@@ -40,7 +40,8 @@
     var html = '<h3 style="margin-top:0">Kelola pengguna</h3>' + (pesanAwal ? '<div class="pesan" style="color:#0F6E5C">' + esc(pesanAwal) + '</div>' : '');
 
     if (papkenz) {
-      html += '<h3>Fasyankes klien</h3>' +
+      html += '<button type="button" id="pg-wilayah">Kelola wilayah Dinkes</button>' +
+        '<h3>Fasyankes klien</h3>' +
         (daftarFas.length ? '<label>Pilih fasyankes</label><select id="pg-fas">' + daftarFas.map(function (x) {
           return '<option value="' + x.id + '"' + (x.id === pilihFas ? ' selected' : '') + '>' + esc(x.nama) + ' (' + esc(x.jenis || '-') + ')</option>';
         }).join('') + '</select>' : '<p class="muted">Belum ada fasyankes.</p>') +
@@ -58,7 +59,12 @@
         '<label>Provinsi</label><input id="fs-prov" value="' + esc(fas.provinsi || '') + '">' +
         '<label>Nama pimpinan</label><input id="fs-pim" value="' + esc(fas.nama_pimpinan || '') + '">' +
         '<label>NIP/NIK pimpinan</label><input id="fs-nip" value="' + esc(fas.nip_nik_pimpinan || '') + '">' +
-        '<button type="button" id="fs-simpan">Simpan data fasyankes</button><div class="pesan" id="fs-pesan"></div></details>';
+        '<button type="button" id="fs-simpan">Simpan data fasyankes</button><div class="pesan" id="fs-pesan"></div></details>' +
+        (/^puskesmas/i.test(fas.jenis || '')
+          ? '<p class="muted">' + (fas.wilayah_id ? 'Data puskesmas ini dapat dilihat (hanya baca) oleh Dinas Kesehatan wilayah Anda.' : 'Puskesmas ini belum terhubung ke Dinas Kesehatan.') + '</p>'
+          : '<h3>Berbagi data dengan Dinas Kesehatan</h3><p class="muted">Bila diizinkan, Dinas Kesehatan wilayah Anda dapat <b>melihat</b> (tidak mengubah) catatan kesehatan lingkungan fasyankes ini untuk pembinaan dan rekap wilayah. Izin bisa dicabut kapan saja.' +
+            (fas.wilayah_id ? '' : ' Fasyankes ini belum terhubung ke wilayah Dinkes mana pun.') + '</p>' +
+            '<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="fs-bagi" style="width:auto"' + (fas.dibagikan_dinkes ? ' checked' : '') + '> Izinkan Dinkes melihat data</label><div class="pesan" id="fs-bagi-pesan"></div>');
     }
 
     var bisaTambah = !papkenz || pilihFas;
@@ -90,6 +96,11 @@
       if (r.error) { $('pf-pesan').textContent = 'Gagal: ' + r.error.message; return; }
       window._pgFas = r.data;
       App.tabs.pengguna(el, 'Fasyankes "' + nama + '" dibuat. Sekarang tambahkan admin fasyankes-nya.');
+    };
+    if (papkenz) $('pg-wilayah').onclick = function () { App.tabs.wilayah(el); App.kembali('Kelola pengguna', function () { App.tabs.pengguna(el); }); window.scrollTo(0, 0); };
+    if (!papkenz && $('fs-bagi')) $('fs-bagi').onchange = async function () {
+      var r = await App.db.rpc('atur_berbagi_dinkes', { p_boleh: this.checked });
+      $('fs-bagi-pesan').textContent = r.error ? 'Gagal: ' + r.error.message : (this.checked ? 'Dinkes sekarang dapat melihat data fasyankes ini.' : 'Izin berbagi dicabut.');
     };
     if (!papkenz) $('fs-simpan').onclick = async function () {
       var r = await App.db.rpc('ubah_fasyankes_saya', {

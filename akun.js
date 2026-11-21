@@ -1,7 +1,7 @@
 (function () {
   var NAMA_PERAN = {
     admin_papkenz: 'Admin Papkenz', admin_fasyankes: 'Admin fasyankes', petugas_kesling: 'Petugas kesling',
-    petugas_ruangan: 'Petugas ruangan', pimpinan: 'Pimpinan'
+    petugas_ruangan: 'Petugas ruangan', pimpinan: 'Pimpinan', dinkes: 'Dinas Kesehatan (lihat saja)'
   };
 
   function pasangTombol() {

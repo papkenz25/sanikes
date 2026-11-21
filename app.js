@@ -61,8 +61,10 @@ async function masukApp(user) {
     return;
   }
   App.profil = p.data;
-  $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : 'Admin Papkenz';
-  document.querySelector('[data-tab="catat"]').hidden = p.data.peran === 'admin_papkenz';
+  var dinkes = p.data.peran === 'dinkes';
+  $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : (dinkes ? 'Dinas Kesehatan' : 'Admin Papkenz');
+  document.querySelector('[data-tab="catat"]').hidden = p.data.peran === 'admin_papkenz' || dinkes;
+  ['modul', 'laporan', 'data'].forEach(function (t) { document.querySelector('[data-tab="' + t + '"]').hidden = dinkes; });
   tampil('app');
   pasangSatuan();
   bukaTab('dasbor');
