@@ -6,13 +6,45 @@
 <title>SANIKES by Papkenz</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
 
-<div id="layar-login" class="tengah" hidden>
+<div id="layar-login" hidden>
+  <section id="pembuka" hidden>
+    <div class="pb-nav"><span class="pb-brand"><img src="logo.svg" alt="" width="36" height="36"> SANIKES</span><button type="button" class="kecil" id="pb-masuk-atas">Masuk</button></div>
+    <div class="pb-hero">
+      <div class="pb-label">Untuk puskesmas, klinik, dan rumah sakit</div>
+      <h1>Kesehatan lingkungan fasyankes, tanpa tumpukan kertas</h1>
+      <p>Catat sekali di HP atau iPad. Laporan bulanan, pemantauan baku mutu, dan rekap untuk Dinas Kesehatan tersusun dari catatan yang sama.</p>
+      <div class="pb-aksi">
+        <button type="button" class="pb-utama" data-demo="klinik">Coba demo sekarang</button>
+        <button type="button" class="pb-kedua" id="pb-masuk">Sudah punya akun? Masuk</button>
+      </div>
+      <div class="pb-kecil">Tanpa daftar. Semua data di demo hanyalah contoh.</div>
+    </div>
+    <div class="pb-grid">
+      <div class="pb-k"><div class="pb-ik" data-ik="data"></div><h3>Input sekali, semua laporan</h3><p>Limbah B3, air dan IPAL, vektor, udara, pangan, dan K3 dicatat di satu tempat. Laporan bulanan tersusun dari catatan itu.</p></div>
+      <div class="pb-k"><div class="pb-ik" data-ik="k3"></div><h3>Mengacu aturan terbaru</h3><p>Baku mutu mengacu Permenkes 2/2023 dan Permen LH 11/2025. Batas simpan limbah B3 dihitung otomatis dan ditampilkan di dasbor.</p></div>
+      <div class="pb-k"><div class="pb-ik" data-ik="pkm"></div><h3>Dinas Kesehatan ikut memantau</h3><p>Puskesmas terhubung ke rekap wilayah. Klinik dan rumah sakit hanya terlihat bila mereka mengizinkan.</p></div>
+    </div>
+    <div class="panel">
+      <div class="panel-h"><h3>Contoh tampilan dasbor</h3><span class="muted">data contoh</span></div>
+      <div class="kpi-grid">
+        <div class="kpi"><div class="kpi-l">Pencatatan IPAL</div><div class="kpi-n">92%</div><div class="kpi-s">hari terisi bulan ini</div></div>
+        <div class="kpi"><div class="kpi-l">Hasil uji memenuhi</div><div class="kpi-n">89%</div><div class="kpi-s">157 parameter diperiksa</div></div>
+        <div class="kpi"><div class="kpi-l">Limbah B3 bulan ini</div><div class="kpi-n">118 kg</div><div class="kpi-s">tercatat per jenis</div></div>
+        <div class="kpi waspada"><div class="kpi-l">Temuan terbuka</div><div class="kpi-n">3</div><div class="kpi-s">perlu ditindaklanjuti</div></div>
+      </div>
+      <div class="pb-aksi" style="margin-top:12px"><button type="button" class="kecil" data-demo="klinik" style="border:1px solid var(--hijau)">Lihat demo fasyankes</button><button type="button" class="kecil" data-demo="dinkes" style="border:1px solid var(--hijau)">Lihat demo Dinas Kesehatan</button></div>
+    </div>
+    <div class="pb-kaki">Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com">papkenz25@gmail.com</a><br><a href="privasi.html">Syarat Layanan dan Kebijakan Privasi</a></div>
+  </section>
+  <div id="kartu-login" class="tengah" hidden>
   <main class="kartu">
-    <p class="logo">SANIKES</p>
+    <button type="button" class="kecil" id="kartu-balik" style="margin:0 0 14px">← Beranda</button>
+    <p class="logo"><img src="logo.svg" alt="" width="34" height="34" style="vertical-align:-8px"> SANIKES</p>
     <p class="sub">by Papkenz · Input sekali, semua laporan</p>
     <form id="form-login">
       <label for="email">Email</label>
@@ -35,36 +67,36 @@
     <p class="muted" style="font-size:12px;margin-top:16px;text-align:center"><a href="privasi.html" style="color:inherit">Syarat Layanan dan Kebijakan Privasi</a></p>
     </div>
   </main>
+  </div>
 </div>
 
 <div id="layar-app" hidden>
   <header class="atas">
-    <div><b>SANIKES</b><small id="info-fasyankes"></small></div>
-    <button class="kecil" id="tombol-keluar">Keluar</button>
+    <div class="atas-merek"><img src="logo.svg" alt="" width="34" height="34"><div><b>SANIKES</b><small id="info-fasyankes"></small></div></div>
   </header>
   <main id="isi"></main>
   <nav class="bawah">
     <button data-tab="dasbor" class="aktif">Dasbor</button>
-    <button data-tab="catat">Catat</button>
     <button data-tab="modul">Modul</button>
     <button data-tab="laporan">Laporan</button>
     <button data-tab="data">Data</button>
+    <button data-tab="akun">Akun</button>
   </nav>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
-<script src="app.js?v=9"></script>
+<script src="app.js?v=11"></script>
 <script src="dasbor.js?v=8"></script>
 <script src="dinkes.js?v=3"></script>
-<script src="akun.js?v=6"></script>
+<script src="akun.js?v=7"></script>
 <script src="cadangan.js?v=1"></script>
 <script src="wilayah.js?v=1"></script>
 <script src="pengguna.js?v=3"></script>
 <script src="limbah.js?v=2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 <script src="label.js"></script>
-<script src="modul.js?v=8"></script>
+<script src="modul.js?v=18"></script>
 <script src="kelola.js?v=2"></script>
 <script src="tindaklanjut.js?v=2"></script>
 <script src="pengaturan.js?v=3"></script>

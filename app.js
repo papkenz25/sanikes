@@ -20,30 +20,44 @@ function fmtBerat(kg) {
   }
   return n.toLocaleString('id-ID', { minimumFractionDigits: 0, maximumFractionDigits: 3 }) + ' kg';
 }
-function tampil(layar) {
+// Ikon garis sederhana (24x24), dipakai di menu dan halaman pembuka.
+var IKON = {
+  dasbor: '<path d="M4 20v-7M10 20V5M16 20v-10M21 20H3"/>',
+  modul: '<rect x="3" y="3" width="7" height="7" rx="1.500"/><rect x="14" y="3" width="7" height="7" rx="1.500"/><rect x="14" y="14" width="7" height="7" rx="1.500"/><rect x="3" y="14" width="7" height="7" rx="1.500"/>',
+  laporan: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h6"/>',
+  data: '<ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.700 3.600 3 8 3s8-1.300 8-3V5"/><path d="M4 11v6c0 1.700 3.600 3 8 3s8-1.300 8-3v-6"/>',
+  akun: '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.600-7 8-7s8 3 8 7"/>',
+  limbah: '<path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/><path d="M10 11v5M14 11v5"/>',
+  air: '<path d="M12 3s6 6.500 6 11a6 6 0 0 1-12 0c0-4.500 6-11 6-11z"/>',
+  vektor: '<ellipse cx="12" cy="14" rx="4" ry="6"/><path d="M9 6l1.500 2M15 6l-1.500 2M4 12l4 1M20 12l-4 1M4 19l4-2M20 19l-4-2M12 8v12"/>',
+  udara: '<path d="M3 8h11a3 3 0 1 0-3-3"/><path d="M3 12h16a3 3 0 1 1-3 3"/><path d="M3 16h7"/>',
+  tpm: '<path d="M7 3v8M5 3v5a2 2 0 0 0 4 0V3M7 11v10"/><path d="M17 21V3c-2.500 1.500-3.500 4-3.500 7 0 1.500 1.500 2.500 3.500 2.500"/>',
+  k3: '<path d="M12 3l8 3v6c0 4.500-3.200 8-8 9-4.800-1-8-4.500-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  rs: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 14l2 2 4-4"/>',
+  pkm: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  kit: '<path d="M14.700 6.300a4 4 0 0 0-5 5L3 18l3 3 6.700-6.700a4 4 0 0 0 5-5l-2.500 2.500-2.500-.5-.5-2.500z"/>'
+};
+function ikon(nama, ukuran) {
+  var u = ukuran || 22;
+  return '<svg width="' + u + '" height="' + u + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (IKON[nama] || '') + '</svg>';
+}
+(function pasangIkon() {
+  document.querySelectorAll('.bawah [data-tab]').forEach(function (b) {
+    b.innerHTML = ikon(b.dataset.tab, 22) + '<span>' + b.textContent + '</span>';
+  });
+  document.querySelectorAll('[data-ik]').forEach(function (d) { d.innerHTML = ikon(d.dataset.ik, 24); });
+})();
+
+// Layar login punya dua tampilan: halaman pembuka (default) dan kartu masuk.
+function keLogin(kartu) {
+  $('pembuka').hidden = kartu;
+  $('kartu-login').hidden = !kartu;
+  window.scrollTo(0, 0);
+}
+function tampil(layar, kartu) {
   $('layar-login').hidden = layar !== 'login';
   $('layar-app').hidden = layar !== 'app';
-}
-
-function pasangSatuan() {
-  var ada = $('tombol-satuan');
-  if (ada) { ada.textContent = 'Satuan: ' + App.satuan; return; }
-  var k = $('tombol-keluar');
-  var w = document.createElement('div');
-  w.style.cssText = 'display:flex;gap:8px;align-items:center';
-  k.parentNode.insertBefore(w, k);
-  var tb = document.createElement('button');
-  tb.id = 'tombol-satuan';
-  tb.className = 'kecil';
-  tb.textContent = 'Satuan: ' + App.satuan;
-  tb.addEventListener('click', function () {
-    App.satuan = App.satuan === 'kg' ? 'ton' : 'kg';
-    try { localStorage.setItem('sanikes_satuan', App.satuan); } catch (e) {}
-    tb.textContent = 'Satuan: ' + App.satuan;
-    bukaTab(App.tab);
-  });
-  w.appendChild(tb);
-  w.appendChild(k);
+  if (layar === 'login') keLogin(!!kartu);
 }
 
 var VERSI_PRIVASI = '1.0';
@@ -51,7 +65,7 @@ var VERSI_PRIVASI = '1.0';
 var DEMO = { klinik: 'papkenz25+demoklinik@gmail.com', dinkes: 'papkenz25+demodinkes@gmail.com', sandi: 'demosanikes' };
 function mintaPersetujuan(prof) {
   return new Promise(function (selesai) {
-    tampil('login');
+    tampil('login', true);
     $('form-login').hidden = true;
     if ($('tombol-lupa')) $('tombol-lupa').hidden = true;
     if ($('login-ekstra')) $('login-ekstra').hidden = true;
@@ -82,13 +96,13 @@ async function masukApp(user) {
   var p = await App.db.from('profil').select('*, fasyankes(nama)').eq('id', user.id).maybeSingle();
   if (p.error || !p.data) {
     await App.db.auth.signOut();
-    tampil('login');
+    tampil('login', true);
     $('pesan-login').textContent = 'Profil pengguna belum terdaftar.';
     return;
   }
   if (p.data.aktif === false) {
     await App.db.auth.signOut();
-    tampil('login');
+    tampil('login', true);
     $('pesan-login').textContent = 'Akun Anda dinonaktifkan. Hubungi admin fasyankes.';
     return;
   }
@@ -111,10 +125,8 @@ async function masukApp(user) {
     'Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com" style="color:inherit;font-weight:700">papkenz25@gmail.com</a>';
   var dinkes = p.data.peran === 'dinkes';
   $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : (dinkes ? 'Dinas Kesehatan' : 'Admin Papkenz');
-  document.querySelector('[data-tab="catat"]').hidden = p.data.peran === 'admin_papkenz' || dinkes;
   ['modul', 'laporan', 'data'].forEach(function (t) { document.querySelector('[data-tab="' + t + '"]').hidden = dinkes; });
   tampil('app');
-  pasangSatuan();
   bukaTab('dasbor');
 }
 
@@ -179,7 +191,7 @@ App.tabs.data = function (el) { el.innerHTML = '<div class="info">Pengaturan dat
 
 async function init() {
   if (!cfg.SUPABASE_URL || cfg.SUPABASE_URL.indexOf('ISI_') === 0) {
-    $('pesan-login').textContent = 'config.js belum diisi.';
+    keLogin(true); $('pesan-login').textContent = 'config.js belum diisi.';
     return;
   }
   var pulih = /type=recovery/.test(location.hash);
@@ -214,7 +226,7 @@ async function init() {
     try { if ($('ingat') && $('ingat').checked) localStorage.setItem('sanikes-ingat', '1'); else localStorage.removeItem('sanikes-ingat'); } catch (e2) {}
     var r = await App.db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pin').value });
     $('tombol-masuk').disabled = false;
-    if (r.error) { $('pesan-login').textContent = 'Email atau PIN salah.'; return; }
+    if (r.error) { keLogin(true); $('pesan-login').textContent = 'Email atau PIN salah.'; return; }
     $('pin').value = '';
     masukApp(r.data.user);
   });
@@ -226,10 +238,14 @@ async function init() {
       $('form-login').requestSubmit ? $('form-login').requestSubmit() : $('tombol-masuk').click();
     });
   });
-  $('tombol-keluar').addEventListener('click', async function () {
+  document.addEventListener('click', async function (e) {
+    if (!e.target.closest('#tombol-keluar')) return;
     await App.db.auth.signOut();
+    App.profil = null; App.demo = false;
     tampil('login');
   });
+  ['pb-masuk', 'pb-masuk-atas'].forEach(function (id) { $(id).addEventListener('click', function () { keLogin(true); }); });
+  $('kartu-balik').addEventListener('click', function () { keLogin(false); });
   document.querySelector('.bawah').addEventListener('click', function (e) {
     var b = e.target.closest('button');
     if (b) bukaTab(b.dataset.tab);
@@ -241,7 +257,7 @@ async function init() {
 }
 
 function formPulih(user) {
-  tampil('login');
+  tampil('login', true);
   $('form-login').hidden = true;
   if ($('login-ekstra')) $('login-ekstra').hidden = true;
   var d = document.createElement('div');

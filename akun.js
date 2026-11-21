@@ -4,26 +4,6 @@
     petugas_ruangan: 'Petugas ruangan', pimpinan: 'Pimpinan', dinkes: 'Dinas Kesehatan (lihat saja)'
   };
 
-  function pasangTombol() {
-    if (document.getElementById('tombol-akun')) return true;
-    var sat = document.getElementById('tombol-satuan');
-    if (!sat) return false;
-    var b = document.createElement('button');
-    b.id = 'tombol-akun';
-    b.className = 'kecil';
-    b.textContent = 'Akun';
-    b.addEventListener('click', function () {
-      App.tab = 'akun';
-      App.kembali(null);
-      document.querySelectorAll('.bawah button').forEach(function (x) { x.classList.remove('aktif'); });
-      App.tabs.akun(document.getElementById('isi'));
-      window.scrollTo(0, 0);
-    });
-    sat.parentNode.insertBefore(b, sat);
-    return true;
-  }
-  var coba = setInterval(function () { if (pasangTombol()) clearInterval(coba); }, 500);
-
   async function cekSandi(email, sandi) {
     var r = await App.db.auth.signInWithPassword({ email: email, password: sandi });
     return !r.error;
@@ -41,6 +21,10 @@
       '<div class="info">Nama: <b>' + esc(p.nama || '-') + '</b><br>Peran: ' + esc(NAMA_PERAN[p.peran] || p.peran || '-') +
       '<br>Fasyankes: ' + esc((p.fasyankes && p.fasyankes.nama) || '-') + '<br>Email: <b>' + esc(user.email || '-') + '</b>' + menunggu + '</div>' +
 
+      '<button type="button" id="tombol-keluar" class="keluar">Keluar dari SANIKES</button>' +
+      '<h3>Satuan berat</h3><p class="muted">Dipakai untuk menampilkan berat limbah di seluruh aplikasi.</p><div class="chips">' +
+      '<button type="button" class="chip' + (App.satuan === 'kg' ? ' aktif' : '') + '" data-sat="kg">Kilogram (kg)</button>' +
+      '<button type="button" class="chip' + (App.satuan === 'ton' ? ' aktif' : '') + '" data-sat="ton">Ton</button></div>' +
       ((p.peran === 'admin_fasyankes' || p.peran === 'admin_papkenz') ? '<button type="button" id="ak-pengguna">Kelola pengguna dan data fasyankes</button>' : '') +
       ((p.peran === 'admin_fasyankes' || p.peran === 'pimpinan' || p.peran === 'petugas_kesling') ? '<h3>Cadangan data</h3><p class="muted">Unduh seluruh data fasyankes ke satu file Excel. Simpan di tempat aman, minimal sebulan sekali.</p><button type="button" id="ak-cadangan">Unduh semua data (Excel)</button><div class="pesan" id="ak-pesan-cad"></div>' : '') +
       '<h3>Ubah nama</h3><label>Nama lengkap</label><input id="ak-nama" value="' + esc(p.nama || '') + '">' +
@@ -56,6 +40,14 @@
       '<label>Email baru</label><input type="email" id="ak-email" autocomplete="email">' +
       '<label>Kata sandi saat ini</label><input type="password" id="ak-sandi-email" autocomplete="current-password">' +
       '<button type="button" id="ak-simpan-email">Kirim konfirmasi email baru</button><div class="pesan" id="ak-pesan-email"></div>';
+
+    el.querySelectorAll('[data-sat]').forEach(function (b) {
+      b.onclick = function () {
+        App.satuan = this.dataset.sat;
+        try { localStorage.setItem('sanikes_satuan', App.satuan); } catch (e) {}
+        App.tabs.akun(el);
+      };
+    });
 
     if (App.demo) {
       ['ak-simpan-sandi', 'ak-simpan-email', 'ak-simpan-nama'].forEach(function (k) { if ($(k)) $(k).disabled = true; });

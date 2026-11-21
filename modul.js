@@ -52,42 +52,46 @@
     ] }
   };
 
-  var KOTAK = 'padding:20px 12px;min-height:90px';
+  var ICON_MODUL = { limbah: 'limbah', air: 'air', vektor: 'vektor', udara: 'udara', tpm: 'tpm', k3: 'k3', rs: 'rs', pkm: 'pkm', kit: 'kit' };
 
+  // Buka layar kerja dari submenu, dengan tombol kembali ke submenu itu.
   function pindah(nama, sub, el) {
     var isi = document.getElementById('isi');
-    if (sub && !document.querySelector('.bawah [data-tab="' + nama + '"]')) {
-      setTimeout(function () { App.kembali(SUB[sub].judul, function () { document.querySelector('.bawah [data-tab="modul"]').classList.add('aktif'); tampil(el, sub); }); }, 0);
-    }
-    var tombol = document.querySelector('.bawah [data-tab="' + nama + '"]');
-    if (tombol) tombol.click();
-    else if (App.tabs[nama]) App.tabs[nama](isi);
+    if (!App.tabs[nama]) return;
+    App.tabs[nama](isi);
+    App.kembali(sub && SUB[sub] ? SUB[sub].judul : 'Modul', function () { tampil(el, sub); });
+    window.scrollTo(0, 0);
   }
 
   function tampil(el, sub) {
     var h = '';
+    var ruangan = App.profil && App.profil.peran === 'petugas_ruangan';
     if (sub && SUB[sub]) {
-      h = '<h3 style="margin-top:0">' + SUB[sub].judul + '</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
+      h = '<h3 style="margin-top:0">' + SUB[sub].judul + '</h3><div class="ubin-grid">' +
         SUB[sub].isi.map(function (m) {
-          return '<button type="button" data-go="' + m[0] + '" style="' + KOTAK + '">' + m[1] + (m[2] ? '<br><small>' + m[2] + '</small>' : '') + '</button>';
-        }).join('') +
-        '</div><p><button type="button" data-back="1" style="background:#666">← Semua modul</button></p>';
-    } else {
-      h = '<h3 style="margin-top:0">Modul</h3><div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">' +
-        DAFTAR.map(function (m) {
-          return '<button type="button" ' + (m[2] ? 'data-m="' + m[0] + '"' : 'disabled') +
-            ' style="' + KOTAK + (m[2] ? '' : ';opacity:.45') + '">' + m[1] + (m[2] ? '' : '<br><small>Segera</small>') + '</button>';
+          return '<button type="button" class="ubin" data-go="' + m[0] + '"><span class="ik">' + ikon(ICON_MODUL[sub] || 'modul', 22) + '</span>' + m[1] + (m[2] ? '<small>' + m[2] + '</small>' : '') + '</button>';
         }).join('') + '</div>';
+      if (ruangan && sub === 'limbah') App.kembali(null);
+      else App.kembali('Semua modul', function () { tampil(el, null); });
+    } else {
+      h = '<h3 style="margin-top:0">Modul</h3><div class="ubin-grid">' +
+        DAFTAR.map(function (m) {
+          return '<button type="button" class="ubin" ' + (m[2] ? 'data-m="' + m[0] + '"' : 'disabled style="opacity:.45"') + '><span class="ik">' + ikon(ICON_MODUL[m[0]] || 'modul', 22) + '</span>' + m[1] + (m[2] ? '' : '<small>Segera</small>') + '</button>';
+        }).join('') + '</div>';
+      App.kembali(null);
     }
     el.innerHTML = '<div id="modul-root">' + h + '</div>';
     $('modul-root').onclick = function (e) {
       var b = e.target.closest('button');
       if (!b) return;
-      if (b.dataset.m) tampil(el, b.dataset.m);
-      else if (b.dataset.back) tampil(el, null);
+      if (b.dataset.m) { tampil(el, b.dataset.m); window.scrollTo(0, 0); }
       else if (b.dataset.go) pindah(b.dataset.go, sub, el);
     };
   }
 
-  App.tabs.modul = function (el) { el.onclick = null; tampil(el, null); };
+  App.tabs.modul = function (el) {
+    el.onclick = null;
+    // Petugas ruangan hanya mencatat limbah: langsung ke menu Limbah.
+    tampil(el, App.profil && App.profil.peran === 'petugas_ruangan' ? 'limbah' : null);
+  };
 })();
