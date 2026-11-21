@@ -42,6 +42,7 @@
       '<br>Fasyankes: ' + esc((p.fasyankes && p.fasyankes.nama) || '-') + '<br>Email: <b>' + esc(user.email || '-') + '</b>' + menunggu + '</div>' +
 
       ((p.peran === 'admin_fasyankes' || p.peran === 'admin_papkenz') ? '<button type="button" id="ak-pengguna">Kelola pengguna dan data fasyankes</button>' : '') +
+      ((p.peran === 'admin_fasyankes' || p.peran === 'pimpinan' || p.peran === 'petugas_kesling') ? '<h3>Cadangan data</h3><p class="muted">Unduh seluruh data fasyankes ke satu file Excel. Simpan di tempat aman, minimal sebulan sekali.</p><button type="button" id="ak-cadangan">Unduh semua data (Excel)</button><div class="pesan" id="ak-pesan-cad"></div>' : '') +
       '<h3>Ubah nama</h3><label>Nama lengkap</label><input id="ak-nama" value="' + esc(p.nama || '') + '">' +
       '<button type="button" id="ak-simpan-nama">Simpan nama</button><div class="pesan" id="ak-pesan-nama"></div>' +
       '<h3>Ubah kata sandi</h3>' +
@@ -56,6 +57,7 @@
       '<label>Kata sandi saat ini</label><input type="password" id="ak-sandi-email" autocomplete="current-password">' +
       '<button type="button" id="ak-simpan-email">Kirim konfirmasi email baru</button><div class="pesan" id="ak-pesan-email"></div>';
 
+    if ($('ak-cadangan')) $('ak-cadangan').onclick = function () { window.CADANGAN(this, $('ak-pesan-cad')); };
     if ($('ak-pengguna')) $('ak-pengguna').onclick = function () { App.tabs.pengguna(el); App.kembali('Akun', function () { App.tabs.akun(el); }); window.scrollTo(0, 0); };
     $('ak-simpan-nama').addEventListener('click', async function () {
       var nama = $('ak-nama').value.trim(), ps = $('ak-pesan-nama');
