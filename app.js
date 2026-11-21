@@ -47,6 +47,8 @@ function pasangSatuan() {
 }
 
 var VERSI_PRIVASI = '1.0';
+// Akun demo publik: hanya bisa mengakses fasyankes demo; data dan sandinya dikembalikan setiap malam.
+var DEMO = { klinik: 'papkenz25+demoklinik@gmail.com', dinkes: 'papkenz25+demodinkes@gmail.com', sandi: 'demosanikes' };
 function mintaPersetujuan(prof) {
   return new Promise(function (selesai) {
     tampil('login');
@@ -95,6 +97,18 @@ async function masukApp(user) {
     p.data.versi_privasi = VERSI_PRIVASI;
   }
   App.profil = p.data;
+  App.demo = [DEMO.klinik, DEMO.dinkes].indexOf(String(user.email || '').toLowerCase()) > -1;
+  var pita = $('pita-demo');
+  if (!pita) {
+    pita = document.createElement('div');
+    pita.id = 'pita-demo';
+    pita.className = 'noprint';
+    pita.style.cssText = 'background:#FFF4E0;color:#7A4A00;font-size:13px;padding:8px 16px;text-align:center;border-bottom:1px solid #F0D9A8';
+    $('isi').parentNode.insertBefore(pita, document.querySelector('header.atas').nextSibling);
+  }
+  pita.hidden = !App.demo;
+  pita.innerHTML = 'Mode demo: semua data adalah contoh dan kembali seperti semula setiap pukul 02.00 WITA. ' +
+    'Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com" style="color:inherit;font-weight:700">papkenz25@gmail.com</a>';
   var dinkes = p.data.peran === 'dinkes';
   $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : (dinkes ? 'Dinas Kesehatan' : 'Admin Papkenz');
   document.querySelector('[data-tab="catat"]').hidden = p.data.peran === 'admin_papkenz' || dinkes;
@@ -203,6 +217,14 @@ async function init() {
     if (r.error) { $('pesan-login').textContent = 'Email atau PIN salah.'; return; }
     $('pin').value = '';
     masukApp(r.data.user);
+  });
+  document.querySelectorAll('[data-demo]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $('email').value = DEMO[this.dataset.demo];
+      $('pin').value = DEMO.sandi;
+      if ($('ingat')) $('ingat').checked = false;
+      $('form-login').requestSubmit ? $('form-login').requestSubmit() : $('tombol-masuk').click();
+    });
   });
   $('tombol-keluar').addEventListener('click', async function () {
     await App.db.auth.signOut();

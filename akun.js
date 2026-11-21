@@ -57,6 +57,10 @@
       '<label>Kata sandi saat ini</label><input type="password" id="ak-sandi-email" autocomplete="current-password">' +
       '<button type="button" id="ak-simpan-email">Kirim konfirmasi email baru</button><div class="pesan" id="ak-pesan-email"></div>';
 
+    if (App.demo) {
+      ['ak-simpan-sandi', 'ak-simpan-email', 'ak-simpan-nama'].forEach(function (k) { if ($(k)) $(k).disabled = true; });
+      el.insertAdjacentHTML('afterbegin', '<div class="info" style="margin-bottom:12px">Ini akun demo. Nama, kata sandi, dan email tidak bisa diubah.</div>');
+    }
     if ($('ak-cadangan')) $('ak-cadangan').onclick = function () { window.CADANGAN(this, $('ak-pesan-cad')); };
     if ($('ak-pengguna')) $('ak-pengguna').onclick = function () { App.tabs.pengguna(el); App.kembali('Akun', function () { App.tabs.akun(el); }); window.scrollTo(0, 0); };
     $('ak-simpan-nama').addEventListener('click', async function () {
