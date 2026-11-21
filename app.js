@@ -103,8 +103,7 @@ async function masukApp(user) {
   if (!pita) {
     pita = document.createElement('div');
     pita.id = 'pita-demo';
-    pita.className = 'noprint';
-    pita.style.cssText = 'background:#FFF4E0;color:#7A4A00;font-size:13px;padding:8px 16px;text-align:center;border-bottom:1px solid #F0D9A8';
+    pita.className = 'noprint pita-demo';
     $('isi').parentNode.insertBefore(pita, document.querySelector('header.atas').nextSibling);
   }
   pita.hidden = !App.demo;

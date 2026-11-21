@@ -28,13 +28,13 @@
     var w = await App.db.from('wilayah').select('*').maybeSingle();
     var fr = await App.db.from('fasyankes').select('id, nama, jenis').order('nama');
     var fas = fr.data || [];
-    var judul = '<div class="dsb-h"><div class="muted">' + esc((w.data || {}).nama || 'Wilayah') + '</div><h2>Rekap kesehatan lingkungan fasyankes</h2></div>' +
-      '<div class="noprint" style="display:flex;gap:8px;align-items:end;flex-wrap:wrap"><div><label>Bulan</label><select id="dk-bl">' +
+    var judul = '<div class="dk-hero"><small>' + esc((w.data || {}).nama || 'Wilayah') + '</small><h2>Rekap kesehatan lingkungan fasyankes</h2>' +
+      '<div class="dk-per noprint"><div><label>Bulan</label><select id="dk-bl">' +
       BULAN.map(function (b, i) { return '<option value="' + i + '"' + (i === bl ? ' selected' : '') + '>' + b + '</option>'; }).join('') +
-      '</select></div><div><label>Tahun</label><input type="number" id="dk-th" value="' + th + '" style="width:110px"></div>' +
-      '<button type="button" class="chip" id="dk-buka">Tampilkan</button></div>';
+      '</select></div><div><label>Tahun</label><input type="number" id="dk-th" value="' + th + '" style="width:100px"></div>' +
+      '<button type="button" class="chip" id="dk-buka">Tampilkan</button></div>@@RING@@</div>';
     if (!fas.length) {
-      el.innerHTML = judul + '<div class="info">Belum ada fasyankes yang terhubung ke wilayah ini. Puskesmas otomatis terlihat setelah didaftarkan ke wilayah; klinik dan RS terlihat setelah admin mereka menyetujui berbagi data.</div>';
+      el.innerHTML = judul.replace('@@RING@@', '') + '<div class="info">Belum ada fasyankes yang terhubung ke wilayah ini. Puskesmas otomatis terlihat setelah didaftarkan ke wilayah; klinik dan RS terlihat setelah admin mereka menyetujui berbagi data.</div>';
       return;
     }
     var ids = fas.map(function (x) { return x.id; });
@@ -43,7 +43,7 @@
     var hariHitung = (th === kini.getFullYear() && bl === kini.getMonth()) ? kini.getDate() : hariBulan;
 
     var r = await Promise.all([
-      ambil('limbah_harian', 'fasyankes_id, berat_kg', ids, dari, sampai, false),
+      ambil('limbah_harian', 'fasyankes_id, berat_kg, tanggal', ids, tglLokal(new Date(th, bl - 5, 1)), sampai, false),
       ambil('ipal_harian', 'fasyankes_id, tanggal', ids, dari, sampai, true),
       Promise.all(UJI.map(function (t) { return ambil(t, 'fasyankes_id, status', ids, dari, sampai, true); })),
       Promise.all(INSP.map(function (t) { return ambil(t, 'fasyankes_id, status', ids, dari, sampai, true); })),
@@ -54,7 +54,13 @@
     var per = {};
     fas.forEach(function (x) { per[x.id] = { kg: 0, ipal: {}, ok: 0, tdk: 0, insp: 0, inspTdk: 0, buka: 0, k3: 0, lapor: false, adaIpal: true }; });
     r[6].forEach(function (x) { if (x.kunci === 'kelas_ipal' && x.nilai === 'tidak_ada' && per[x.fasyankes_id]) per[x.fasyankes_id].adaIpal = false; });
-    r[0].forEach(function (x) { var p = per[x.fasyankes_id]; if (p) { p.kg += Number(x.berat_kg) || 0; p.lapor = true; } });
+    var bulanKg = [0, 0, 0, 0, 0, 0];
+    r[0].forEach(function (x) {
+      var p = per[x.fasyankes_id]; if (!p) return;
+      var d = String(x.tanggal || '').split('-'), sel = (th * 12 + bl) - (Number(d[0]) * 12 + Number(d[1]) - 1);
+      if (sel >= 0 && sel <= 5) bulanKg[5 - sel] += Number(x.berat_kg) || 0;
+      if (sel === 0) { p.kg += Number(x.berat_kg) || 0; p.lapor = true; }
+    });
     r[1].forEach(function (x) { var p = per[x.fasyankes_id]; if (p) { p.ipal[x.tanggal] = 1; p.lapor = true; } });
     r[2].forEach(function (rows) { rows.forEach(function (x) { var p = per[x.fasyankes_id]; if (!p) return; p.lapor = true; if (x.status === 'memenuhi') p.ok++; else if (x.status === 'tidak_memenuhi') p.tdk++; }); });
     r[3].forEach(function (rows) { rows.forEach(function (x) { var p = per[x.fasyankes_id]; if (!p) return; p.lapor = true; p.insp++; if (x.status === 'tidak_memenuhi') p.inspTdk++; }); });
@@ -65,28 +71,49 @@
     fas.forEach(function (x) { var p = per[x.id]; tot.kg += p.kg; tot.ok += p.ok; tot.tdk += p.tdk; tot.buka += p.buka; if (p.lapor) tot.lapor++; });
     var pUji = tot.ok + tot.tdk ? Math.round(tot.ok / (tot.ok + tot.tdk) * 100) : null;
 
-    var h = judul + '<div class="kpi-grid" style="margin-top:12px">' +
+    var persenLapor = fas.length ? Math.round(tot.lapor / fas.length * 100) : 0, R = 30, K = 2 * Math.PI * R;
+    var ring = '<div class="dk-ring"><svg width="76" height="76" viewBox="0 0 76 76"><circle cx="38" cy="38" r="' + R + '" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="8"/>' +
+      '<circle cx="38" cy="38" r="' + R + '" fill="none" stroke="#fff" stroke-width="8" stroke-linecap="round" stroke-dasharray="' + (K * persenLapor / 100) + ' ' + K + '" transform="rotate(-90 38 38)"/>' +
+      '<text x="38" y="43" text-anchor="middle" fill="#fff" font-size="16" font-weight="800">' + persenLapor + '%</text></svg>' +
+      '<div><b>' + tot.lapor + ' dari ' + fas.length + ' fasyankes sudah melapor</b><span>' + BULAN[bl] + ' ' + th + (tot.lapor < fas.length ? ' · ' + (fas.length - tot.lapor) + ' belum ada catatan' : ' · semua sudah mengisi') + '</span></div></div>';
+
+    var h = judul.replace('@@RING@@', ring) + '<div class="kpi-grid" style="margin-top:12px">' +
       kpi('Fasyankes melapor', tot.lapor + ' / ' + fas.length, BULAN[bl] + ' ' + th, tot.lapor < fas.length ? 'waspada' : '') +
       kpi('Hasil uji memenuhi', pUji == null ? '–' : pUji + '%', (tot.ok + tot.tdk) + ' parameter diperiksa', pUji != null && pUji < 100 ? 'waspada' : '') +
       kpi('Limbah B3 wilayah', angka(tot.kg, tot.kg >= 100 ? 0 : 1) + ' kg', 'total semua fasyankes') +
       kpi('Temuan terbuka', String(tot.buka), 'belum ditindaklanjuti', tot.buka ? 'waspada' : '') + '</div>';
 
+    var maks = Math.max.apply(null, bulanKg.concat([1]));
+    h += '<section class="panel"><div class="panel-h"><h3>Limbah B3 wilayah, 6 bulan terakhir</h3><span class="muted">kg</span></div><div class="dk-grafik">' +
+      bulanKg.map(function (v, k) {
+        var d = new Date(th, bl - 5 + k, 1);
+        return '<div><span class="nil">' + angka(v, v >= 100 ? 0 : 1) + '</span><div class="btg' + (k === 5 ? ' kini' : '') + '" style="height:' + Math.max(3, Math.round(v / maks * 90)) + 'px"></div>' + BULAN[d.getMonth()].slice(0, 3) + '</div>';
+      }).join('') + '</div></section>';
+
+    function status(p, pUjiF, pIpal) {
+      if (!p.lapor) return 'belum';
+      if ((pUjiF != null && pUjiF < 80) || p.buka >= 5 || (pIpal != null && pIpal < 60)) return 'perhatian';
+      return 'baik';
+    }
+    function bar(l, v, teks, nada) {
+      return '<div><div class="dk-m-l"><span>' + l + '</span><b>' + teks + '</b></div><div class="dk-bar' + (nada ? ' ' + nada : '') + '"><div style="width:' + (v || 0) + '%"></div></div></div>';
+    }
     var urut = fas.slice().sort(function (a, b) { return (per[a.id].lapor - per[b.id].lapor) || (per[b.id].buka - per[a.id].buka); });
-    h += '<section class="panel"><div class="panel-h"><h3>Per fasyankes</h3><span class="muted">yang belum melapor di atas</span></div>' +
+    h += '<section class="panel"><div class="panel-h"><h3>Per fasyankes</h3><span class="muted">yang perlu perhatian di atas</span></div>' +
       urut.map(function (x) {
         var p = per[x.id], n = p.ok + p.tdk, hariIpal = Object.keys(p.ipal).length;
         var pIpal = p.adaIpal ? Math.min(100, Math.round(hariIpal / hariHitung * 100)) : null;
-        return '<div class="baris" style="border-bottom:1px solid var(--garis);padding:10px 0">' +
-          '<div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline"><b>' + esc(x.nama) + '</b>' +
-          (p.lapor ? '<span class="st ok">✓ melapor</span>' : '<span class="st belum">○ belum melapor</span>') + '</div>' +
-          '<div class="muted" style="font-size:12.5px;margin-top:4px;line-height:1.6">' +
-          'IPAL harian: ' + (pIpal == null ? 'tidak punya IPAL' : hariIpal + ' dari ' + hariHitung + ' hari (' + pIpal + '%)') +
-          ' · Hasil uji: ' + (n ? Math.round(p.ok / n * 100) + '% memenuhi (' + p.tdk + ' tidak)' : 'belum ada') +
-          ' · Inspeksi: ' + p.insp + (p.inspTdk ? ' (' + p.inspTdk + ' tidak memenuhi)' : '') +
-          ' · Limbah B3: ' + angka(p.kg) + ' kg · Insiden K3: ' + p.k3 +
-          ' · Temuan terbuka: ' + (p.buka ? '<span class="lewat">' + p.buka + '</span>' : '0') + '</div>' +
-          '<button type="button" class="chip noprint" style="margin-top:6px" data-lap="' + x.id + '">Lihat laporan bulanan</button></div>';
-      }).join('') + '</section>' +
+        var pUjiF = n ? Math.round(p.ok / n * 100) : null;
+        var st = status(p, pUjiF, pIpal);
+        var LB = { belum: '○ Belum melapor', perhatian: '! Perlu perhatian', baik: '✓ Baik' };
+        return '<div class="dk-kartu ' + st + '"><div class="dk-kartu-h"><b>' + esc(x.nama) + '</b><span class="dk-lencana">' + LB[st] + '</span></div>' +
+          '<div class="dk-metrik">' +
+          bar('Pencatatan IPAL', pIpal, pIpal == null ? 'tidak ada IPAL' : hariIpal + '/' + hariHitung + ' hari', pIpal != null && pIpal < 60 ? 'merah' : (pIpal != null && pIpal < 85 ? 'kuning' : '')) +
+          bar('Hasil uji memenuhi', pUjiF, pUjiF == null ? 'belum ada' : pUjiF + '% (' + p.tdk + ' tidak)', pUjiF != null && pUjiF < 60 ? 'merah' : (pUjiF != null && pUjiF < 80 ? 'kuning' : '')) +
+          bar('Inspeksi memenuhi', p.insp ? Math.round((p.insp - p.inspTdk) / p.insp * 100) : 0, p.insp ? (p.insp - p.inspTdk) + '/' + p.insp : 'belum ada', p.inspTdk ? 'kuning' : '') +
+          '</div><div class="dk-angka"><div>Limbah B3<b>' + angka(p.kg) + ' kg</b></div><div>Insiden K3<b>' + p.k3 + '</b></div><div>Temuan terbuka<b' + (p.buka ? ' class="merah"' : '') + '>' + p.buka + '</b></div></div>' +
+          '<button type="button" class="chip noprint" style="margin-top:12px" data-lap="' + x.id + '">Lihat laporan bulanan</button></div>';
+      }).join('') + '<p class="muted" style="margin:8px 0 0;font-size:12px">Penanda cepat: "Perlu perhatian" bila hasil uji memenuhi di bawah 80%, pencatatan IPAL di bawah 60% hari, atau temuan terbuka 5 atau lebih.</p></section>' +
       '<button type="button" class="noprint" id="dk-cetak">Cetak rekap wilayah</button>';
     el.innerHTML = h;
 
