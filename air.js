@@ -1,6 +1,6 @@
 (function () {
   var TULIS = ['admin_fasyankes', 'petugas_kesling', 'petugas_ruangan'];
-  var QUAL = { 'Bau': ['Tidak berbau', 'Berbau'] };
+  var QUAL = { 'Bau': ['Tidak berbau', 'Berbau'], 'Salmonela': ['Negatif', 'Positif'], 'Shigela': ['Negatif', 'Positif'], 'Vibrio cholera': ['Negatif', 'Positif'], 'Streptococus': ['Negatif', 'Positif'] };
   var KEL = ['Fisik', 'Kimia', 'Biologi'];
   var SUHU = 'Suhu (selisih dari suhu udara)';
   var KONDISI = ['Baik', 'Perlu perbaikan', 'Mati'];
