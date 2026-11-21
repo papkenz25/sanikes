@@ -54,6 +54,7 @@ function mintaPersetujuan(prof) {
     tampil('login');
     $('form-login').hidden = true;
     if ($('tombol-lupa')) $('tombol-lupa').hidden = true;
+    if ($('login-ekstra')) $('login-ekstra').hidden = true;
     var d = document.createElement('div');
     d.innerHTML = '<p><b>Halo, ' + esc(prof.nama || '') + '</b></p>' +
       '<p class="muted" style="font-size:14px;line-height:1.6">Sebelum memakai SANIKES, mohon baca dan setujui ' +
@@ -64,7 +65,7 @@ function mintaPersetujuan(prof) {
       '<button type="button" id="pv-setuju">Setuju dan lanjutkan</button>' +
       '<button type="button" class="kecil" id="pv-batal" style="margin-top:10px">Keluar</button><div class="pesan" id="pv-pesan"></div>';
     $('form-login').parentNode.appendChild(d);
-    function tutup() { d.remove(); $('form-login').hidden = false; if ($('tombol-lupa')) $('tombol-lupa').hidden = false; }
+    function tutup() { d.remove(); $('form-login').hidden = false; if ($('tombol-lupa')) $('tombol-lupa').hidden = false; if ($('login-ekstra')) $('login-ekstra').hidden = false; }
     $('pv-batal').onclick = async function () { tutup(); await App.db.auth.signOut(); tampil('login'); selesai(false); };
     $('pv-setuju').onclick = async function () {
       if (!$('pv-cek').checked) { $('pv-pesan').textContent = 'Centang persetujuan terlebih dahulu.'; return; }
@@ -243,6 +244,7 @@ async function init() {
 function formPulih(user) {
   tampil('login');
   $('form-login').hidden = true;
+  if ($('login-ekstra')) $('login-ekstra').hidden = true;
   var d = document.createElement('div');
   d.innerHTML = '<p><b>Atur kata sandi baru</b><br><span class="muted">' + esc(user.email || '') + '</span></p>' +
     '<label>Kata sandi baru (minimal 8 karakter)</label><input id="ps-1" type="password" autocomplete="new-password">' +
@@ -260,6 +262,7 @@ function formPulih(user) {
     history.replaceState(null, '', location.pathname);
     d.remove();
     $('form-login').hidden = false;
+    if ($('login-ekstra')) $('login-ekstra').hidden = false;
     masukApp(user);
   };
 }
