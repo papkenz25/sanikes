@@ -68,7 +68,7 @@
     var h = judul + '<div class="kpi-grid" style="margin-top:12px">' +
       kpi('Fasyankes melapor', tot.lapor + ' / ' + fas.length, BULAN[bl] + ' ' + th, tot.lapor < fas.length ? 'waspada' : '') +
       kpi('Hasil uji memenuhi', pUji == null ? '–' : pUji + '%', (tot.ok + tot.tdk) + ' parameter diperiksa', pUji != null && pUji < 100 ? 'waspada' : '') +
-      kpi('Limbah B3 wilayah', angka(tot.kg, 0) + ' kg', 'total semua fasyankes') +
+      kpi('Limbah B3 wilayah', angka(tot.kg, tot.kg >= 100 ? 0 : 1) + ' kg', 'total semua fasyankes') +
       kpi('Temuan terbuka', String(tot.buka), 'belum ditindaklanjuti', tot.buka ? 'waspada' : '') + '</div>';
 
     var urut = fas.slice().sort(function (a, b) { return (per[a.id].lapor - per[b.id].lapor) || (per[b.id].buka - per[a.id].buka); });
