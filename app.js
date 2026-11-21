@@ -135,7 +135,18 @@ async function init() {
     return;
   }
   var pulih = /type=recovery/.test(location.hash);
-  App.db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY);
+  // "Ingat saya": sesi disimpan permanen (localStorage) hanya bila dicentang;
+  // bila tidak, sesi hanya hidup di tab ini (sessionStorage) dan hilang saat tab/browser ditutup.
+  function ingat() { try { return localStorage.getItem('sanikes-ingat') === '1'; } catch (e) { return false; } }
+  function gudang() { try { return ingat() ? localStorage : sessionStorage; } catch (e) { return null; } }
+  var simpanSesi = {
+    getItem: function (k) { var g = gudang(); return g ? g.getItem(k) : null; },
+    setItem: function (k, v) { var g = gudang(); if (g) g.setItem(k, v); },
+    removeItem: function (k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} }
+  };
+  App.db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, { auth: { storage: simpanSesi } });
+  try { if (!ingat()) Object.keys(localStorage).forEach(function (k) { if (/^sb-.*-auth-token/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
+  if ($('ingat')) $('ingat').checked = ingat();
 
   $('tombol-lupa').addEventListener('click', async function () {
     var email = $('email').value.trim();
@@ -152,6 +163,7 @@ async function init() {
     e.preventDefault();
     $('tombol-masuk').disabled = true;
     $('pesan-login').textContent = '';
+    try { if ($('ingat') && $('ingat').checked) localStorage.setItem('sanikes-ingat', '1'); else localStorage.removeItem('sanikes-ingat'); } catch (e2) {}
     var r = await App.db.auth.signInWithPassword({ email: $('email').value.trim(), password: $('pin').value });
     $('tombol-masuk').disabled = false;
     if (r.error) { $('pesan-login').textContent = 'Email atau PIN salah.'; return; }
