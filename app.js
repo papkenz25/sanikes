@@ -46,8 +46,37 @@ function pasangSatuan() {
   w.appendChild(k);
 }
 
+var VERSI_PRIVASI = '1.0';
+function mintaPersetujuan(prof) {
+  return new Promise(function (selesai) {
+    tampil('login');
+    $('form-login').hidden = true;
+    if ($('tombol-lupa')) $('tombol-lupa').hidden = true;
+    var d = document.createElement('div');
+    d.innerHTML = '<p><b>Halo, ' + esc(prof.nama || '') + '</b></p>' +
+      '<p class="muted" style="font-size:14px;line-height:1.6">Sebelum memakai SANIKES, mohon baca dan setujui ' +
+      '<a href="privasi.html" target="_blank" rel="noopener">Syarat Layanan dan Kebijakan Privasi</a>. Ringkasnya: data fasyankes milik fasyankes, ' +
+      'tidak dijual atau dibagikan, dan Dinas Kesehatan hanya bisa melihat data klinik/RS bila fasyankes mengizinkan.</p>' +
+      '<label style="display:flex;gap:8px;align-items:flex-start;font-weight:400"><input type="checkbox" id="pv-cek" style="width:auto;margin:3px 0 0"> ' +
+      'Saya sudah membaca dan menyetujui Syarat Layanan dan Kebijakan Privasi SANIKES.</label>' +
+      '<button type="button" id="pv-setuju">Setuju dan lanjutkan</button>' +
+      '<button type="button" class="kecil" id="pv-batal" style="margin-top:10px">Keluar</button><div class="pesan" id="pv-pesan"></div>';
+    $('form-login').parentNode.appendChild(d);
+    function tutup() { d.remove(); $('form-login').hidden = false; if ($('tombol-lupa')) $('tombol-lupa').hidden = false; }
+    $('pv-batal').onclick = async function () { tutup(); await App.db.auth.signOut(); tampil('login'); selesai(false); };
+    $('pv-setuju').onclick = async function () {
+      if (!$('pv-cek').checked) { $('pv-pesan').textContent = 'Centang persetujuan terlebih dahulu.'; return; }
+      this.disabled = true;
+      var r = await App.db.rpc('setujui_privasi', { p_versi: VERSI_PRIVASI });
+      this.disabled = false;
+      if (r.error) { $('pv-pesan').textContent = 'Gagal: ' + r.error.message; return; }
+      tutup(); selesai(true);
+    };
+  });
+}
+
 async function masukApp(user) {
-  var p = await App.db.from('profil').select('id, nama, peran, aktif, fasyankes_id, fasyankes(nama)').eq('id', user.id).maybeSingle();
+  var p = await App.db.from('profil').select('*, fasyankes(nama)').eq('id', user.id).maybeSingle();
   if (p.error || !p.data) {
     await App.db.auth.signOut();
     tampil('login');
@@ -59,6 +88,11 @@ async function masukApp(user) {
     tampil('login');
     $('pesan-login').textContent = 'Akun Anda dinonaktifkan. Hubungi admin fasyankes.';
     return;
+  }
+  if ('versi_privasi' in p.data && p.data.versi_privasi !== VERSI_PRIVASI) {
+    var ok = await mintaPersetujuan(p.data);
+    if (!ok) return;
+    p.data.versi_privasi = VERSI_PRIVASI;
   }
   App.profil = p.data;
   var dinkes = p.data.peran === 'dinkes';
