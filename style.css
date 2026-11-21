@@ -156,3 +156,14 @@ button.keluar { background:#fff; color:var(--merah); border:1.5px solid var(--me
   .pb-hero h1 { font-size:40px; max-width:680px; }
   .pb-grid { grid-template-columns:repeat(3,1fr); }
 }
+
+/* ===== Panduan formulir ===== */
+.panduan { background:#fff; border:1px solid var(--garis); border-left:4px solid var(--hijau); border-radius:12px; margin:8px 0 14px; }
+.panduan summary { cursor:pointer; padding:11px 14px; font-weight:700; font-size:13.5px; color:var(--hijau); list-style:none; display:flex; justify-content:space-between; align-items:center; gap:8px; }
+.panduan summary::-webkit-details-marker { display:none; }
+.panduan summary::after { content:'Buka'; font-size:12px; font-weight:600; color:var(--abu); }
+.panduan[open] summary::after { content:'Tutup'; }
+.panduan-isi { padding:0 14px 12px; font-size:13px; line-height:1.65; }
+.panduan-isi p { margin:8px 0; }
+.panduan-isi ul { margin:6px 0; padding-left:18px; }
+.panduan-isi li { margin:4px 0; }
