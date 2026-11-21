@@ -29,6 +29,19 @@
       soal = r[0].data || [];
       var ruang = r[1].data || [];
       var batas = cfg.batasDefault == null ? null : (Number((r[2] || {})[cfg.batasKunci]) || cfg.batasDefault);
+      // Daftar tempat yang diperiksa (hanya untuk TPP dan TFU/TTU)
+      var objekOk = false, semuaObjek = [], objek = [], terakhir = {};
+      window._ckSel = window._ckSel || {};
+      if (cfg.objekKat) {
+        var ro = await App.db.from('objek_inspeksi').select('*').eq('kategori', cfg.objekKat).order('nama');
+        if (!ro.error && window.OBJEK) {
+          objekOk = true; semuaObjek = ro.data || [];
+          objek = semuaObjek.filter(function (o) { return o.aktif; });
+          var rt = await App.db.from(cfg.tabel).select('objek_id, tanggal').not('objek_id', 'is', null).is('dihapus', null).order('tanggal', { ascending: false }).limit(2000);
+          (rt.data || []).forEach(function (x) { if (!terakhir[x.objek_id]) terakhir[x.objek_id] = x.tanggal; });
+        }
+      }
+      function cariObjek(id) { return semuaObjek.filter(function (o) { return o.id === id; })[0]; }
       var opsiHtml = cfg.opsi.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
 
       var inLok = '';
@@ -36,18 +49,64 @@
       else if (cfg.lokasi === 'tahun') inLok = '<label>' + esc(cfg.lokasiLabel) + '</label><input type="number" id="ck-lok" value="' + new Date().getFullYear() + '">';
       else inLok = '<label>' + esc(cfg.lokasiLabel) + '</label><input id="ck-lok" placeholder="' + esc(cfg.lokasiContoh || '') + '">';
 
-      var inJenis = cfg.jenis ? '<label>Jenis tempat</label><select id="ck-jenis">' + cfg.jenis.map(function (j) { return '<option>' + esc(j) + '</option>'; }).join('') + '</select>' : '';
+      var tambahTempat = false;
+      if (objekOk) {
+        tambahTempat = OBJEK.bisaTulis();
+        var sel = window._ckSel[cfg.tab];
+        inLok = '<label>' + esc(cfg.lokasiLabel) + '</label>' +
+          (objek.length
+            ? '<select id="ck-objek">' + objek.map(function (o) { return '<option value="' + o.id + '"' + (o.id === sel ? ' selected' : '') + '>' + esc(o.nama) + (o.desa ? ' · ' + esc(o.desa) : '') + '</option>'; }).join('') + '</select><div id="ck-objek-info" class="muted" style="margin-top:6px;line-height:1.6"></div>'
+            : '<div class="info waspada">Belum ada tempat di daftar. ' + (tambahTempat ? 'Tambahkan dulu dengan tombol di bawah.' : 'Minta admin atau petugas kesling menambahkannya.') + '</div>') +
+          '<div class="aksi">' + (tambahTempat ? '<button type="button" class="chip" id="ck-objek-baru">+ Tempat baru</button>' : '') + '<button type="button" class="chip" id="ck-objek-kelola">Kelola daftar tempat</button></div><div id="ck-objek-form"></div>';
+      }
+      var inJenis = (cfg.jenis && !objekOk) ? '<label>Jenis tempat</label><select id="ck-jenis">' + cfg.jenis.map(function (j) { return '<option>' + esc(j) + '</option>'; }).join('') + '</select>' : '';
       var form = bisaTulis()
         ? (soal.length
           ? '<label>Tanggal</label><input type="date" id="ck-tgl" value="' + tglLokal(new Date()) + '">' + inJenis + inLok +
             '<p class="muted">' + (cfg.info || '') + (batas != null ? ' Batas laik: ' + batas + '.' : '') + '</p>' +
             '<div id="ck-soal"></div><div id="ck-skor" class="info"></div>' +
+            (objekOk ? '<label>Pemeriksa</label><input id="ck-pem" value="' + esc(App.profil.nama || '') + '">' +
+              '<label>Rekomendasi perbaikan (opsional)</label><input id="ck-rek" placeholder="mis. Sediakan sabun dan air mengalir di toilet">' +
+              '<label>Batas waktu perbaikan (opsional)</label><input type="date" id="ck-bts">' : '') +
             '<label>Catatan (opsional)</label><input id="ck-cat">' +
             '<button type="button" id="ck-simpan">Simpan</button><div class="pesan" id="ck-pesan"></div>'
           : '<div class="info waspada">Daftar pertanyaan belum tersedia di database.</div>')
         : '';
       el.innerHTML = '<div id="ck-root"><h3 style="margin-top:0" class="noprint">' + esc(cfg.judul) + '</h3><div class="noprint">' + form + '</div>' +
         '<div id="tl-box" class="noprint"></div><h3 class="noprint">Riwayat</h3><div id="ck-daftar"></div></div>';
+
+      if (objekOk && bisaTulis()) {
+        var pilih = $('ck-objek');
+        var segarInfo = function () {
+          if (!pilih) return;
+          window._ckSel[cfg.tab] = pilih.value;
+          var o = cariObjek(pilih.value);
+          $('ck-objek-info').innerHTML = OBJEK.info(o, o && terakhir[o.id]);
+        };
+        if (pilih) { pilih.onchange = segarInfo; segarInfo(); }
+        if ($('ck-objek-kelola')) $('ck-objek-kelola').onclick = function () {
+          App.tabs['objek_' + cfg.objekKat](el);
+          App.kembali(cfg.judul, function () { App.tabs[cfg.tab](el); });
+          window.scrollTo(0, 0);
+        };
+        if ($('ck-objek-baru')) $('ck-objek-baru').onclick = function () {
+          var w = $('ck-objek-form');
+          if (w.innerHTML) { w.innerHTML = ''; return; }
+          w.innerHTML = '<div class="info"><b>Tempat baru</b>' + OBJEK.form('ckn', cfg.objekKat, null) +
+            '<button type="button" id="ckn-simpan">Simpan tempat</button><div class="pesan" id="ckn-pesan"></div></div>';
+          OBJEK.pasangGps('ckn');
+          $('ckn-simpan').onclick = async function () {
+            var b = OBJEK.baca('ckn', cfg.objekKat);
+            if (b.galat) { $('ckn-pesan').textContent = b.galat; return; }
+            this.disabled = true;
+            var res = await App.db.from('objek_inspeksi').insert(b.data).select('id');
+            this.disabled = false;
+            if (res.error) { $('ckn-pesan').textContent = OBJEK.pesanGalat(res.error); return; }
+            window._ckSel[cfg.tab] = res.data && res.data[0] && res.data[0].id;
+            await App.tabs[cfg.tab](el);
+          };
+        };
+      }
 
       function jawaban() {
         var o = {};
@@ -84,8 +143,16 @@
           '<button type="button" id="ck-tutup" style="width:auto;padding:10px 20px;background:#666">Tutup</button></div>' +
           '<h3>' + esc(cfg.judulCetak || cfg.judul) + '</h3><p>' + esc((App.profil.fasyankes && App.profil.fasyankes.nama) || '') + '<br>' +
           (x.jenis_objek ? 'Jenis tempat: ' + esc(x.jenis_objek) + '<br>' : '') + esc(cfg.lokasiLabel) + ': ' + esc(x.lokasi || '-') + ' · Tanggal: ' + esc(x.tanggal) + '</p>' +
+          (function () {
+            var o = x.objek_id ? cariObjek(x.objek_id) : null;
+            var a = o ? [o.alamat, o.desa, o.kecamatan].filter(Boolean).map(esc).join(', ') : '';
+            var pj = o ? [o.penanggung_jawab, o.kontak].filter(Boolean).map(esc).join(' · ') : '';
+            return (a ? '<p style="margin-top:-8px">Alamat: ' + a + (pj ? '<br>Penanggung jawab: ' + pj : '') + '</p>' : (pj ? '<p style="margin-top:-8px">Penanggung jawab: ' + pj + '</p>' : '')) +
+              (x.pemeriksa ? '<p style="margin-top:-8px">Pemeriksa: ' + esc(x.pemeriksa) + '</p>' : '');
+          })() +
           '<table style="width:100%;border-collapse:collapse;font-size:13px">' + isi + '</table>' +
           '<p>' + (x.skor != null && x.batas_skor != null ? 'Skor: <b>' + angka(x.skor) + '</b> (batas ' + x.batas_skor + ') · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') : '') + '</p>' +
+          (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(x.batas_perbaikan) + ')' : '') + '</p>' : '') +
           (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') +
           '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>.................................</p>';
         $('ck-root').style.display = 'none';
@@ -107,6 +174,7 @@
             return '<div class="baris"' + (x.dihapus ? ' style="opacity:.6"' : '') + '><b>' + esc(x.lokasi || '-') + '</b>' + (x.jenis_objek ? ' · ' + esc(x.jenis_objek) : '') +
               (x.skor != null ? ' · skor ' + angka(x.skor) : '') + ' ' + lencana(x.status) +
               '<br><span class="muted">' + esc(x.tanggal) + ' · ' + jml + ' item ' + esc(cfg.hasilTidak || 'tidak sesuai') + (x.catatan ? ' · ' + esc(x.catatan) : '') + '</span>' +
+              (x.rekomendasi ? '<br><span class="muted">Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' · perbaiki sebelum ' + esc(x.batas_perbaikan) : '') + '</span>' : '') +
               '<br><button type="button" class="chip" data-cetak="' + x.id + '">Lihat / cetak</button>' +
               (window.KL ? KL.tombol(x) : '') + '</div>';
           }).join('') : '<p class="muted">Belum ada data.</p>');
@@ -133,7 +201,9 @@
 
       if (bisaTulis() && soal.length) {
         $('ck-simpan').addEventListener('click', async function () {
-          var tgl = $('ck-tgl').value, lok = String($('ck-lok').value || '').trim();
+          var tgl = $('ck-tgl').value, lok, dipilih = null;
+          if (objekOk) { dipilih = $('ck-objek') ? cariObjek($('ck-objek').value) : null; lok = dipilih ? dipilih.nama : ''; if (!dipilih) { $('ck-pesan').textContent = 'Pilih tempat yang diperiksa dulu.'; return; } }
+          else lok = String($('ck-lok').value || '').trim();
           var jw = jawaban();
           var kosong = soal.filter(function (q) { return !jw[q.kode]; }).length;
           if (!tgl || !lok) { $('ck-pesan').textContent = 'Tanggal dan ' + cfg.lokasiLabel.toLowerCase() + ' wajib diisi.'; return; }
@@ -146,7 +216,13 @@
             catatan: $('ck-cat').value.trim() || null,
             temuan: h.tidak.length ? h.tidak.map(function (q) { return '• ' + q.pertanyaan; }).join('\n') : null
           };
-          if (cfg.jenis) baru.jenis_objek = $('ck-jenis').value;
+          if (objekOk) {
+            baru.objek_id = dipilih.id;
+            baru.pemeriksa = $('ck-pem').value.trim() || null;
+            baru.rekomendasi = $('ck-rek').value.trim() || null;
+            baru.batas_perbaikan = $('ck-bts').value || null;
+            if (cfg.jenis) { baru.jenis_objek = dipilih.jenis || 'Lainnya'; baru.nama_objek = dipilih.nama; baru.alamat = [dipilih.alamat, dipilih.desa, dipilih.kecamatan].filter(Boolean).join(', ') || null; }
+          } else if (cfg.jenis) baru.jenis_objek = $('ck-jenis').value;
           var res = await App.db.from(cfg.tabel).insert(baru).select('id');
           if (res.error) { $('ck-pesan').textContent = 'Gagal menyimpan: ' + (res.error.message || 'coba lagi'); return; }
           var id = res.data && res.data[0] && res.data[0].id;
@@ -169,7 +245,7 @@
   // ===== Pendaftaran checklist =====
   CEK({
     tab: 'tpm_cek', judul: 'Inspeksi tempat pengelolaan pangan (TPP)', judulCetak: 'HASIL INSPEKSI KESEHATAN LINGKUNGAN TEMPAT PENGELOLAAN PANGAN',
-    modul: 'tpm', tabel: 'tpm_inspeksi', kategori: 'tpm',
+    modul: 'tpm', tabel: 'tpm_inspeksi', kategori: 'tpm', objekKat: 'tpm',
     opsi: [['ya', 'Ya, sesuai'], ['tidak', 'Tidak sesuai'], ['tb', 'Tidak berlaku']],
     lokasi: 'teks', lokasiLabel: 'Nama TPP / dapur', lokasiContoh: 'mis. Instalasi gizi, Kantin karyawan',
     batasKunci: 'batas_skor_tpm', batasDefault: 80,
@@ -177,7 +253,7 @@
   });
   CEK({
     tab: 'ttu_cek', judul: 'Inspeksi tempat dan fasilitas umum (TFU/TTU)', judulCetak: 'HASIL INSPEKSI KESEHATAN LINGKUNGAN TEMPAT DAN FASILITAS UMUM',
-    modul: 'ttu', tabel: 'ikl_inspeksi', kategori: 'ttu',
+    modul: 'ttu', tabel: 'ikl_inspeksi', kategori: 'ttu', objekKat: 'ttu',
     jenis: ['Sekolah / madrasah', 'Pondok pesantren', 'Tempat ibadah', 'Pasar', 'Hotel / penginapan', 'Terminal / stasiun / pelabuhan', 'Tempat rekreasi', 'Sarana olahraga / kolam renang', 'Perkantoran', 'Fasilitas kesehatan', 'Lainnya'],
     opsi: [['ya', 'Ya, sesuai'], ['tidak', 'Tidak sesuai'], ['tb', 'Tidak berlaku']],
     lokasi: 'teks', lokasiLabel: 'Nama tempat', lokasiContoh: 'mis. SD Negeri 1, Masjid Raya, Pasar Sentral',

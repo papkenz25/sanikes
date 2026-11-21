@@ -29,6 +29,7 @@
     ] },
     tpm: { judul: 'Pangan (TPM & Gizi)', isi: [
       ['tpm_cek', 'Inspeksi TPP', 'dapur, instalasi gizi, kantin'],
+      ['objek_tpm', 'Daftar tempat pangan', 'dapur, kantin, katering'],
       ['tpm_penjamah', 'Penjamah pangan', 'sertifikat, pemeriksaan kesehatan']
     ] },
     k3: { judul: 'K3 Fasyankes', isi: [
@@ -41,6 +42,7 @@
     ] },
     pkm: { judul: 'Kesling Puskesmas', isi: [
       ['ttu_cek', 'Inspeksi TFU / TTU', 'sekolah, ibadah, pasar, hotel'],
+      ['objek_ttu', 'Daftar TFU / TTU', 'sekolah, ibadah, pasar, hotel'],
       ['pkm_stbm', 'STBM 5 pilar', 'per KK, rekap per desa']
     ] },
     kit: { judul: 'Alat sanitarian & merkuri', isi: [
