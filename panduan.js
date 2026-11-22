@@ -13,7 +13,7 @@
         '<li><b>Suhu penyimpanan:</b> memengaruhi batas simpan untuk jenis limbah tertentu.</li>' +
         '<li><b>ID kantong:</b> boleh dikosongkan. Berguna untuk menelusuri kantong dan untuk label.</li></ul>' +
         '<p><b>Setelah disimpan:</b> batas simpan dihitung otomatis dan tampil di Dasbor. Label kantong bisa dicetak lewat bagian Cetak label di halaman ini. Bila batas simpan sebuah kode belum ditetapkan, aplikasi memberi tanda dan catatan tetap tersimpan.</p>' +
-        '<p class="muted">Batas simpan mengikuti pengaturan kode limbah di aplikasi. Cocokkan dengan ketentuan terbaru yang berlaku di fasyankes Anda. Dasar aturan: Permen LHK 6/2021 dan Permen LHK P.56/2015 (status P.56/2015 perlu dipastikan, lihat Akun, Dasar aturan).</p>'
+        '<p class="muted">Batas simpan mengikuti pengaturan kode limbah di aplikasi. Cocokkan dengan ketentuan terbaru yang berlaku di fasyankes Anda. Dasar aturan: Permen LHK 6/2021 dan Permen LHK P.56/2015 (P.56/2015 tidak dicabut Permen LHK 6/2021, tetapi statusnya tetap perlu dipastikan; lihat Akun, Dasar aturan).</p>'
     },
     angkut: {
       judul: 'Panduan: pengangkutan limbah',
@@ -164,7 +164,7 @@
         '<li>Isi tanggal verifikasi.</li>' +
         '</ul>' +
         '<p><b>Setelah disimpan:</b> rekap persentase tiap pilar per desa tampil otomatis. Status desa tetap perlu verifikasi lapangan.</p>' +
-        '<p class="muted">Dasar aturan: Permenkes 3/2014 tentang STBM (status terbaru perlu dipastikan di JDIH Kemenkes). Daftar lengkap ada di Akun, bagian Dasar aturan.</p>'
+        '<p class="muted">Dasar aturan: Permenkes 3/2014 tentang STBM (dicabut sebagian oleh Permenkes 3/2026; Pasal 4, 5, 14, 15 dan Lampiran masih berlaku). Daftar lengkap ada di Akun, bagian Dasar aturan.</p>'
     },
     kit_merkuri: {
       judul: 'Panduan: alat kesehatan bermerkuri',
