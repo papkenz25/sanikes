@@ -125,7 +125,7 @@ async function masukApp(user) {
   pita.hidden = !App.demo;
   pita.innerHTML = 'Mode demo: semua data adalah contoh dan kembali seperti semula setiap pukul 02.00 WITA. ' +
     'Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com" style="color:inherit;font-weight:700">papkenz25@gmail.com</a> ' +
-    '<button type="button" id="pita-beranda" class="kecil" style="width:auto;margin-left:6px;background:#fff;color:#0F6E5C">← Kembali ke beranda</button>';
+    '<button type="button" data-masukan class="kecil" style="width:auto;margin-left:6px;background:#fff;color:#0F6E5C">Beri masukan</button> <button type="button" id="pita-beranda" class="kecil" style="width:auto;margin-left:6px;background:#fff;color:#0F6E5C">← Kembali ke beranda</button>';
   var dinkes = p.data.peran === 'dinkes';
   $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : (dinkes ? 'Dinas Kesehatan' : 'Admin Papkenz');
   ['modul', 'laporan', 'data'].forEach(function (t) { document.querySelector('[data-tab="' + t + '"]').hidden = dinkes; });

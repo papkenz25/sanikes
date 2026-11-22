@@ -213,3 +213,6 @@ button.keluar { background:#fff; color:var(--merah); border:1.5px solid var(--me
 .antre-pita .chip{margin-top:6px}
 .antre-gagal{margin-top:6px;color:#8a1f17}
 @media (min-width:900px){.antre-pita{margin-left:196px}}
+.masukan-ov{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:14px}
+.masukan-kotak{background:#fff;border-radius:12px;padding:18px;max-width:440px;width:100%;max-height:90vh;overflow:auto}
+.masukan-kotak textarea{width:100%;box-sizing:border-box}

@@ -34,6 +34,7 @@
       '<p><b>Mencetak laporan?</b> Buka formulirnya, tekan Riwayat dan cetak laporan, pilih catatan, lalu Cetak / simpan PDF.</p>' +
       '<p><b>Lupa kata sandi?</b> Minta admin fasyankes mengatur ulang lewat Kelola pengguna.</p></details>' +
       '<button type="button" id="ak-aturan" class="chip">Dasar aturan yang dipakai aplikasi</button>' +
+      '<button type="button" class="chip" data-masukan>Beri masukan atau saran</button>' +
       '<p class="muted">Butuh bantuan lain? Email <a href="mailto:papkenz25@gmail.com">papkenz25@gmail.com</a>.</p>' +
       '<h3>Ubah nama</h3><label>Nama lengkap</label><input id="ak-nama" value="' + esc(p.nama || '') + '">' +
       '<button type="button" id="ak-simpan-nama">Simpan nama</button><div class="pesan" id="ak-pesan-nama"></div>' +
