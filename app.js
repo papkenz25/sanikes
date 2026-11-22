@@ -131,6 +131,7 @@ async function masukApp(user) {
   ['modul', 'laporan', 'data'].forEach(function (t) { document.querySelector('[data-tab="' + t + '"]').hidden = dinkes; });
   tampil('app');
   bukaTab('dasbor');
+  if (window.ANTRE) ANTRE.hitung().then(function () { ANTRE.sinkron(); });
 }
 
 App.kembali = function (label, fn) {
@@ -208,6 +209,7 @@ async function init() {
     removeItem: function (k) { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (e) {} }
   };
   App.db = window.supabase.createClient(cfg.SUPABASE_URL, cfg.SUPABASE_KEY, { auth: { storage: simpanSesi } });
+  if (window.ANTRE) ANTRE.pasang(App.db);
   try { if (!ingat()) Object.keys(localStorage).forEach(function (k) { if (/^sb-.*-auth-token/.test(k)) localStorage.removeItem(k); }); } catch (e) {}
   if ($('ingat')) $('ingat').checked = ingat();
 
@@ -284,4 +286,5 @@ function formPulih(user) {
     masukApp(user);
   };
 }
-init();
+// Tunggu semua skrip modul selesai dimuat sebelum masuk (supaya Dasbor lengkap yang tampil)
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();

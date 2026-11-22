@@ -195,3 +195,21 @@ button.keluar { background:#fff; color:var(--merah); border:1.5px solid var(--me
 .dok-toast.galat{background:#B3261E}
 .dok-toast .chip{margin-top:6px}
 @media (min-width:900px){.dok-toast{left:auto;right:20px;max-width:360px;bottom:20px}}
+
+/* Status kirim laporan dan catatan pembinaan */
+.kirim-status{border:1px solid #d9e2df;border-left:4px solid #9aa7a3;border-radius:10px;padding:10px 12px;margin:12px 0;background:#fafcfb;font-size:14px}
+.kirim-status.ok{border-left-color:#0F6E5C;background:#eef7f4}
+.kirim-status span{color:#555}
+.bina{border:1px solid #d9e2df;border-radius:12px;padding:12px;background:#fbfdfc}
+.bina-item{border-top:1px solid #e3ebe8;padding:10px 0}
+.bina-item:first-of-type{border-top:0}
+.bina-h{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.bina-tanggap{margin-top:6px;padding:8px;background:#eef7f4;border-radius:8px;font-size:14px}
+.bina textarea{width:100%;margin-top:6px}
+.dk-final{margin-top:10px;font-size:13px;color:#8a5a00}
+.dk-final.ok{color:#0F6E5C;font-weight:700}
+.kop-logo{height:48px;display:block;margin:0 auto 4px}
+.antre-pita{max-width:900px;margin:10px auto 0;padding:10px 14px;background:#FFF4D6;border:1px solid #E8C46A;border-radius:12px;font-size:14px}
+.antre-pita .chip{margin-top:6px}
+.antre-gagal{margin-top:6px;color:#8a1f17}
+@media (min-width:900px){.antre-pita{margin-left:196px}}

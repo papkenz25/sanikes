@@ -62,7 +62,7 @@
       // Kop
       h += '<div style="text-align:center"><b>' + esc((f.nama || '').toUpperCase()) + '</b><br>' + esc(f.alamat || '') +
         (f.kabupaten_kota ? ', ' + esc(f.kabupaten_kota) : '') + (f.provinsi ? ', ' + esc(f.provinsi) : '') +
-        '<hr><b>LAPORAN KESEHATAN LINGKUNGAN BULANAN</b><br>Periode: ' + BULAN[bl] + ' ' + th + '</div>';
+        '<hr><b>LAPORAN KESEHATAN LINGKUNGAN BULANAN</b><br>Periode: ' + BULAN[bl] + ' ' + th + '</div><div id="lt-kirim" class="noprint"></div>';
 
       // 1. Limbah B3
       var per = {}, totM = 0, totA = 0;
@@ -134,6 +134,7 @@
         '<tr><th style="text-align:left">Bidang</th><th style="text-align:left">Temuan baru bulan ini / sudah selesai / masih terbuka (saat ini)</th></tr>' +
         (Object.keys(semua).sort().map(function (k) { var o = tk[k] || { baru: 0, selesai: 0 }; return baris(esc(NAMA_KAT[k] || k), o.baru + ' / ' + o.selesai + ' / ' + (buka[k] || 0)); }).join('') || baris('-', 'Tidak ada temuan')));
 
+      h += '<div id="lt-bina" style="margin-top:16px"></div>';
       // Tanda tangan
       h += '<div style="display:flex;justify-content:space-between;margin-top:32px"><div>Mengetahui,<br>Pimpinan<br><br><br><b>' + esc(f.nama_pimpinan || '....................') + '</b>' +
         (f.nip_nik_pimpinan ? '<br>NIP/NIK ' + esc(f.nip_nik_pimpinan) : '') + '</div>' +
@@ -141,6 +142,10 @@
         '<button type="button" class="noprint" id="lt-cetak" style="margin-top:16px">Cetak / simpan PDF</button>';
       $('lt-isi').innerHTML = h;
       $('lt-cetak').onclick = function () { window.print(); };
+      if (window.BINA) {
+        BINA.kirim($('lt-kirim'), fid, th, bl);
+        BINA.panel($('lt-bina'), { fid: fid, tabel: 'laporan_bulanan', periode: BINA.periode(th, bl), judul: 'Laporan bulanan ' + BULAN[bl] + ' ' + th });
+      }
     }
     $('lt-buka').onclick = buka;
     buka();

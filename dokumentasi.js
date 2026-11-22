@@ -4,17 +4,19 @@
   var TAB = [
     ['catat', 'limbah_harian', 'Catatan limbah harian', '#l-simpan'],
     ['angkut', 'limbah_angkut', 'Pengangkutan limbah', null],
-    ['air_uji', 'air_uji', 'Hasil uji air', null],
+    ['air_uji', 'air_uji', 'Hasil uji air', '#au-simpan'],
     ['ipal_harian', 'ipal_harian', 'Catatan IPAL harian', '#ih-simpan'],
-    ['ipal_lab', 'ipal_lab', 'Hasil uji laboratorium IPAL', null],
+    ['ipal_lab', 'ipal_lab', 'Hasil uji laboratorium IPAL', '#il-simpan'],
     ['vektor_catat', 'vektor', 'Pemantauan vektor', '#vk-simpan'],
-    ['udara_ukur', 'udara_skudr', 'Hasil pengukuran udara', null],
+    ['udara_ukur', 'udara_skudr', 'Hasil pengukuran udara', '#ud-simpan'],
     ['sanitasi_cek', 'sanitasi_checklist', 'Inspeksi sanitasi bangunan', '#sn-simpan'],
     ['k3_insiden', 'k3_insiden', 'Insiden K3', '#ki-simpan'],
     ['rs_pengawasan', 'pengawasan', 'Pengawasan kesehatan lingkungan fasyankes', '#cr-simpan']
   ];
   // Tabel yang sudah boleh menyimpan foto (sesuai aturan di penyimpanan)
-  var FOTO_OK = ['limbah_harian', 'limbah_angkut', 'sanitasi_checklist', 'vektor', 'ipal_harian', 'k3_insiden', 'pengawasan', 'ikl_inspeksi', 'tpm_inspeksi'];
+  // Tabel dengan satu baris per parameter: foto melekat pada baris pertama, rincian mengumpulkan foto satu pengambilan sampel
+  var GRUP = { air_uji: ['tanggal', 'titik_sampel'], ipal_lab: ['tanggal', 'titik_sampel', 'titik'], udara_skudr: ['tanggal', 'ruangan_id', 'lokasi'] };
+  var FOTO_OK = ['air_uji', 'ipal_lab', 'udara_skudr', 'limbah_harian', 'limbah_angkut', 'sanitasi_checklist', 'vektor', 'ipal_harian', 'k3_insiden', 'pengawasan', 'ikl_inspeksi', 'tpm_inspeksi'];
   var SEMBUNYI = ['id', 'fasyankes_id', 'petugas_id', 'dibuat', 'dihapus', 'dihapus_oleh', 'dihapus_alasan', 'objek_id', 'data_id', 'sumber_id', 'dibuat_oleh', 'diubah', 'diubah_oleh'];
   var LABEL = { tanggal: 'Tanggal', jam: 'Jam', kode_limbah: 'Kode limbah', nama_limbah: 'Jenis limbah', berat_kg: 'Berat (kg)', batas_simpan: 'Batas simpan', id_kantong: 'ID kantong', suhu: 'Suhu penyimpanan', parameter: 'Parameter', hasil: 'Hasil', satuan: 'Satuan', titik: 'Titik pemeriksaan', status: 'Status', lokasi: 'Lokasi', jenis: 'Jenis', jumlah: 'Jumlah', uraian: 'Uraian', tindakan: 'Tindakan', catatan: 'Catatan', skor: 'Skor', no_manifest: 'Nomor manifest', ruangan_id: 'Ruangan', tps_id: 'TPS', vendor_id: 'Vendor' };
 
@@ -44,11 +46,13 @@
     var f = kopCache[fid];
     var nama = f.nama || (App.profil.fasyankes && App.profil.fasyankes.nama) || '';
     if (!nama) return '';
-    var baris = [f.alamat, f.kota || f.kabupaten, f.telepon || f.kontak].filter(Boolean).map(esc).join(' · ');
-    return '<div class="kop-surat"><div class="kop-nama">' + esc(nama) + '</div>' + (baris ? '<div class="kop-alamat">' + baris + '</div>' : '') + '<div class="kop-alamat">Laporan kesehatan lingkungan</div></div>';
+    var baris = [f.alamat, f.kabupaten_kota, f.provinsi].filter(Boolean).map(esc).join(', ');
+    return '<div class="kop-surat">' + (f.logo_url && /^https:\/\//.test(f.logo_url) ? '<img src="' + esc(f.logo_url) + '" alt="" class="kop-logo">' : '') + '<div class="kop-nama">' + esc(nama) + '</div>' + (baris ? '<div class="kop-alamat">' + baris + '</div>' : '') + '<div class="kop-alamat">Laporan kesehatan lingkungan</div></div>';
   }
-  function tandaTangan() {
-    return '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>' + esc((App.profil && App.profil.nama) || '.................................') + '</p>' +
+  function tandaTangan(nama) {
+    var p = App.profil || {};
+    var n = nama || (p.peran !== 'dinkes' && p.nama) || '.................................';
+    return '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>' + esc(n) + '</p>' +
       '<p class="muted" style="font-size:11px">Dicetak dari SANIKES pada ' + new Date().toLocaleString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + '</p>';
   }
 
@@ -70,15 +74,16 @@
   async function proses() {
     if (jalan) return;
     jalan = true;
-    var total = antre.length, n = 0;
+    var total = antre.length, n = 0, tunda = 0;
     while (antre.length) {
       var a = antre.shift(); n++;
       toast('Mengunggah foto ' + n + ' dari ' + total + '...');
       var r = await FOTO.unggah(a.tabel, a.id, '_dok', a.f);
-      if (!r.ok) gagal.push(a);
+      if (!r.ok) gagal.push(a); else if (r.antre) tunda++;
     }
     jalan = false;
     if (gagal.length) toast(gagal.length + ' foto belum terunggah (sinyal lemah?). Catatan sudah aman tersimpan.', true, true);
+    else if (tunda) toast(tunda + ' foto disimpan di perangkat, dikirim otomatis saat sinyal kembali.');
     else toast('Semua foto terunggah.');
   }
 
@@ -175,7 +180,14 @@
     if (x.tps_id) jobs.push(App.db.from('tps').select('id,nama'));
     var hasil = await Promise.all(jobs);
     for (var i = 1; i < hasil.length; i++) ((hasil[i] && hasil[i].data) || []).forEach(function (o) { peta[o.id] = o.nama; });
-    var foto = (FOTO_OK.indexOf(tabel) > -1 && window.FOTO && await FOTO.siap()) ? await FOTO.ambil(tabel, x.id) : [];
+    var fotoIds = [x.id];
+    if (GRUP[tabel] && x.tanggal) {
+      var gq = App.db.from(tabel).select('id').eq('tanggal', x.tanggal);
+      GRUP[tabel].slice(1).forEach(function (k) { if (x[k] != null) gq = gq.eq(k, x[k]); });
+      var gr = await gq.limit(200);
+      if (!gr.error && gr.data && gr.data.length) fotoIds = gr.data.map(function (y) { return y.id; });
+    }
+    var foto = (FOTO_OK.indexOf(tabel) > -1 && window.FOTO && await FOTO.siap()) ? await FOTO.ambil(tabel, fotoIds) : [];
     var baris = Object.keys(x).filter(function (k) { return SEMBUNYI.indexOf(k) < 0 && x[k] != null && x[k] !== '' && typeof x[k] !== 'object'; }).map(function (k) {
       var v = /_id$/.test(k) ? peta[x[k]] : nilaiTampil(k, x[k]);
       if (v == null) return '';

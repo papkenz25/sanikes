@@ -116,12 +116,22 @@
 
     // Ambil foto sebuah catatan beserta tautan sementara untuk menampilkan
     ambil: async function (tabel, dataId) {
-      var r = await App.db.from('foto').select('*').eq('tabel', tabel).eq('data_id', dataId).is('dihapus', null).order('dibuat');
+      var ids = Array.isArray(dataId) ? dataId : [dataId];
+      if (!ids.length) return [];
+      var r = await App.db.from('foto').select('*').eq('tabel', tabel).in('data_id', ids).is('dihapus', null).order('dibuat');
       var rows = r.data || [];
       if (!rows.length) return [];
-      var s = await App.db.storage.from('foto').createSignedUrls(rows.map(function (x) { return x.path; }), 3600);
       var peta = {};
-      (s.data || []).forEach(function (x) { peta[x.path] = x.signedUrl; });
+      // Foto contoh di data demo: berkasnya ada di situs (folder contoh-foto), bukan di penyimpanan
+      var asli = rows.filter(function (x) {
+        if (x.path.split('/')[2] !== 'contoh') return true;
+        peta[x.path] = 'contoh-foto/' + x.path.split('__').pop().replace(/[^a-z0-9.-]/g, '');
+        return false;
+      });
+      if (asli.length) {
+        var s = await App.db.storage.from('foto').createSignedUrls(asli.map(function (x) { return x.path; }), 3600);
+        (s.data || []).forEach(function (x) { peta[x.path] = x.signedUrl; });
+      }
       return rows.map(function (x) { x.url = peta[x.path] || null; return x; }).filter(function (x) { return x.url; });
     },
 

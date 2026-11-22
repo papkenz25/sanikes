@@ -168,7 +168,7 @@
           '<p>' + (x.skor != null && x.batas_skor != null ? 'Skor: <b>' + angka(x.skor) + '</b> (batas ' + x.batas_skor + ') · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') : '') + '</p>' +
           (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(x.batas_perbaikan) + ')' : '') + '</p>' : '') +
           (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') +
-          (window.DOK ? DOK.tandaTangan() : '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>.................................</p>');
+          (window.DOK ? DOK.tandaTangan(x.pemeriksa) : '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>.................................</p>');
         $('ck-root').style.display = 'none';
         el.appendChild(w);
         $('ck-print').onclick = function () { window.print(); };
@@ -251,22 +251,24 @@
             }));
           }
           var ringkas = 'Tersimpan' + (h.skor !== null && batas != null ? '. Skor ' + angka(h.skor) : '') +
-            (h.tidak.length ? '. ' + h.tidak.length + ' item dicatat sebagai temuan.' : '.');
+            (h.tidak.length ? '. ' + h.tidak.length + ' item dicatat sebagai temuan.' : '.') +
+            (res.antre ? ' Sinyal lemah: catatan disimpan di perangkat dan dikirim otomatis saat sinyal kembali.' : '');
           var antre = [];
           if (fotoOk && !App.demo) Object.keys(stFoto).forEach(function (k) { stFoto[k].forEach(function (f) { antre.push({ butir: k, f: f }); }); });
           if (!antre.length) { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas; return; }
 
           // Catatan sudah tersimpan: kunci tombol Simpan agar tidak dobel, lalu unggah foto satu per satu
           $('ck-simpan').disabled = true;
+          var nTunda = 0;
           var unggahLagi = async function () {
             var sisa = [];
             for (var i = 0; i < antre.length; i++) {
               $('ck-pesan').textContent = ringkas + ' Mengunggah foto ' + (i + 1) + ' dari ' + antre.length + '...';
               var u = await FOTO.unggah(cfg.tabel, id, antre[i].butir, antre[i].f);
-              if (!u.ok) sisa.push(antre[i]);
+              if (!u.ok) sisa.push(antre[i]); else if (u.antre) nTunda++;
             }
             antre = sisa;
-            if (!antre.length) { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas + ' Semua foto terunggah.'; return; }
+            if (!antre.length) { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas + (nTunda ? ' ' + nTunda + ' foto disimpan di perangkat dan dikirim otomatis saat sinyal kembali.' : ' Semua foto terunggah.'); return; }
             daftar();
             $('ck-pesan').innerHTML = esc(ringkas) + '<br><span class="lewat">' + antre.length + ' foto belum terunggah (sinyal lemah?). Catatan sudah aman tersimpan.</span><br>' +
               '<button type="button" class="chip" id="ck-ulang">Coba unggah lagi</button> <button type="button" class="chip" id="ck-lewati">Selesai tanpa foto itu</button>';

@@ -64,8 +64,9 @@
       '<p>' + (x.skor != null ? 'Skor: <b>' + angka(x.skor) + '</b>' + (x.batas_skor != null ? ' (batas ' + x.batas_skor + ')' : '') + ' · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') + '<br>' : '') +
       ya + ' butir sesuai, ' + tdk + ' butir tidak sesuai</p>' +
       (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(tgl(x.batas_perbaikan)) + ')' : '') + '</p>' : '') +
-      (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') + (window.DOK ? DOK.tandaTangan() : '') + '</div>';
+      (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') + '<div id="il-bina" style="margin-top:12px"></div>' + (window.DOK ? DOK.tandaTangan(x.pemeriksa) : '') + '</div>';
     $('il-print').onclick = function () { window.print(); };
+    if (window.BINA) BINA.panel($('il-bina'), { fid: x.fasyankes_id, tabel: TABEL[kat], data_id: x.id, judul: x.lokasi || (o && o.nama) || '' });
     el.querySelectorAll('[data-besar-lihat]').forEach(function (im) { im.onclick = function () { FOTO.besar(im.src); }; });
     App.kembali('Daftar inspeksi', balik);
     window.scrollTo(0, 0);

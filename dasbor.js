@@ -202,7 +202,7 @@
     var temuan6 = r[8].data || [], nBuka = (r[2].data || []).length, selesaiBulan = 0;
     temuan6.forEach(function (x) { if (x.status === 'selesai' && x.tanggal_selesai && x.tanggal_selesai >= awalBulan) selesaiBulan++; });
 
-    var h = judul + '<div class="kpi-grid">' +
+    var h = judul + '<div id="ds-bina"></div><div class="kpi-grid">' +
       kpi('Limbah B3 bulan ini', kg(kgKini), subLimbah) +
       kpi('Hasil uji memenuhi', pKepatuhan == null ? '–' : pKepatuhan + '%', pKepatuhan == null ? 'Belum ada hasil uji bulan ini' : ok + ' dari ' + (ok + tdk) + ' parameter', pKepatuhan != null && pKepatuhan < 100 ? 'waspada' : '') +
       kpi('Capaian pemantauan', pCapai == null ? '–' : pCapai + '%', nCapai + ' dari ' + nTarget + ' kegiatan sesuai target') +
@@ -290,6 +290,7 @@
     h += panel('Batas simpan limbah terdekat', isiBatas);
 
     el.innerHTML = '<div id="dasbor-root">' + h + '</div>';
+    if (window.BINA) BINA.dasbor($('ds-bina'));
     $('dasbor-root').onclick = async function (e) {
       var t = e.target.closest ? e.target.closest('[data-buka]') : null;
       if (t && App.tabs[t.dataset.buka]) { App.tabs[t.dataset.buka](el); App.kembali('Dasbor', function () { bukaTab('dasbor'); }); window.scrollTo(0, 0); return; }

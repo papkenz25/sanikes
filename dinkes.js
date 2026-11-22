@@ -81,7 +81,7 @@
       kpi('Fasyankes melapor', tot.lapor + ' / ' + fas.length, BULAN[bl] + ' ' + th, tot.lapor < fas.length ? 'waspada' : '') +
       kpi('Hasil uji memenuhi', pUji == null ? '–' : pUji + '%', (tot.ok + tot.tdk) + ' parameter diperiksa', pUji != null && pUji < 100 ? 'waspada' : '') +
       kpi('Limbah B3 wilayah', angka(tot.kg, tot.kg >= 100 ? 0 : 1) + ' kg', 'total semua fasyankes') +
-      kpi('Temuan terbuka', String(tot.buka), 'belum ditindaklanjuti', tot.buka ? 'waspada' : '') + '</div>';
+      kpi('Temuan terbuka', String(tot.buka), 'belum ditindaklanjuti', tot.buka ? 'waspada' : '') + '</div>@@FINAL@@';
 
     var maks = Math.max.apply(null, bulanKg.concat([1]));
     h += '<section class="panel"><div class="panel-h"><h3>Limbah B3 wilayah, 6 bulan terakhir</h3><span class="muted">kg</span></div><div class="dk-grafik">' +
@@ -98,6 +98,7 @@
     function bar(l, v, teks, nada) {
       return '<div><div class="dk-m-l"><span>' + l + '</span><b>' + teks + '</b></div><div class="dk-bar' + (nada ? ' ' + nada : '') + '"><div style="width:' + (v || 0) + '%"></div></div></div>';
     }
+    var kirimMap = window.BINA ? await BINA.statusKirim(ids, th, bl) : null;
     var urut = fas.slice().sort(function (a, b) { return (per[a.id].lapor - per[b.id].lapor) || (per[b.id].buka - per[a.id].buka); });
     h += '<section class="panel"><div class="panel-h"><h3>Per fasyankes</h3><span class="muted">yang perlu perhatian di atas</span></div>' +
       urut.map(function (x) {
@@ -111,11 +112,13 @@
           bar('Pencatatan IPAL', pIpal, pIpal == null ? 'tidak ada IPAL' : hariIpal + '/' + hariHitung + ' hari', pIpal != null && pIpal < 60 ? 'merah' : (pIpal != null && pIpal < 85 ? 'kuning' : '')) +
           bar('Hasil uji memenuhi', pUjiF, pUjiF == null ? 'belum ada' : pUjiF + '% (' + p.tdk + ' tidak)', pUjiF != null && pUjiF < 60 ? 'merah' : (pUjiF != null && pUjiF < 80 ? 'kuning' : '')) +
           bar('Inspeksi memenuhi', p.insp ? Math.round((p.insp - p.inspTdk) / p.insp * 100) : 0, p.insp ? (p.insp - p.inspTdk) + '/' + p.insp : 'belum ada', p.inspTdk ? 'kuning' : '') +
-          '</div><div class="dk-angka"><div>Limbah B3<b>' + angka(p.kg) + ' kg</b></div><div>Insiden K3<b>' + p.k3 + '</b></div><div>Temuan terbuka<b' + (p.buka ? ' class="merah"' : '') + '>' + p.buka + '</b></div></div>' +
+          '</div>' + (kirimMap ? '<div class="dk-final ' + (kirimMap[x.id] ? 'ok' : '') + '">' + (kirimMap[x.id] ? '✓ Laporan bulan ini sudah ditandai final' : '○ Laporan bulan ini belum ditandai final') + '</div>' : '') + '<div class="dk-angka"><div>Limbah B3<b>' + angka(p.kg) + ' kg</b></div><div>Insiden K3<b>' + p.k3 + '</b></div><div>Temuan terbuka<b' + (p.buka ? ' class="merah"' : '') + '>' + p.buka + '</b></div></div>' +
           '<button type="button" class="chip noprint" style="margin-top:12px" data-lap="' + x.id + '">Lihat laporan bulanan</button> <button type="button" class="chip noprint" style="margin-top:12px" data-insp="' + x.id + '">Lihat inspeksi</button></div>';
       }).join('') + '<p class="muted" style="margin:8px 0 0;font-size:12px">Penanda cepat: "Perlu perhatian" bila hasil uji memenuhi di bawah 80%, pencatatan IPAL di bawah 60% hari, atau temuan terbuka 5 atau lebih.</p></section>' +
       '<button type="button" class="noprint" id="dk-insp" style="margin-bottom:8px">Semua inspeksi wilayah (saring kecamatan / desa)</button>' +
       '<button type="button" class="noprint" id="dk-cetak">Cetak rekap wilayah</button>';
+    var nFinal = kirimMap ? fas.filter(function (x) { return kirimMap[x.id]; }).length : null;
+    h = h.replace('@@FINAL@@', nFinal == null ? '' : '<div class="info' + (nFinal < fas.length ? ' waspada' : '') + '" style="margin-top:8px">Laporan bulanan ditandai final: <b>' + nFinal + ' dari ' + fas.length + '</b> fasyankes.</div>');
     el.innerHTML = h;
 
     $('dk-buka').onclick = function () { window._dkBl = Number($('dk-bl').value); window._dkTh = Number($('dk-th').value); App.tabs.dinkes(el); };
