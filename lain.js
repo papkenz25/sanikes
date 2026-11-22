@@ -161,7 +161,7 @@
   // ===== PENJAMAH PANGAN =====
   crud({
     tab: 'tpm_penjamah', judul: 'Penjamah pangan', tabel: 'penjamah', urut: 'nama', naik: true,
-    info: 'Penjamah wajib memiliki sertifikat pelatihan keamanan pangan siap saji dan diperiksa kesehatannya minimal 1 kali setahun (Permenkes 2/2023 Lampiran D.2.c). Yang dicatat hanya <b>tanggal</b> pemeriksaan, tanpa hasil atau diagnosis.',
+    info: 'Penjamah wajib memiliki sertifikat pelatihan keamanan pangan siap saji dan diperiksa kesehatannya minimal 1 kali setahun (Permenkes 2/2023 Lampiran, bagian persyaratan penjamah pangan). Yang dicatat hanya <b>tanggal</b> pemeriksaan, tanpa hasil atau diagnosis.',
     bidang: [
       { k: 'nama', l: 'Nama penjamah', tipe: 'teks', wajib: true },
       { k: 'lokasi', l: 'Tempat bertugas', tipe: 'teks', wajib: true, contoh: 'mis. Instalasi gizi' },
