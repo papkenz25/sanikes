@@ -27,6 +27,13 @@
       '<button type="button" class="chip' + (App.satuan === 'ton' ? ' aktif' : '') + '" data-sat="ton">Ton</button></div>' +
       ((p.peran === 'admin_fasyankes' || p.peran === 'admin_papkenz') ? '<button type="button" id="ak-pengguna">Kelola pengguna dan data fasyankes</button>' : '') +
       ((p.peran === 'admin_fasyankes' || p.peran === 'pimpinan' || p.peran === 'petugas_kesling') ? '<h3>Cadangan data</h3><p class="muted">Unduh seluruh data fasyankes ke satu file Excel. Simpan di tempat aman, minimal sebulan sekali.</p><button type="button" id="ak-cadangan">Unduh semua data (Excel)</button><div class="pesan" id="ak-pesan-cad"></div>' : '') +
+      '<h3>Bantuan</h3><details class="panduan"><summary>Pertanyaan yang sering muncul</summary>' +
+      '<p><b>Foto wajib?</b> Tidak. Foto bersifat opsional. Foto dari kamera mencatat titik lokasi dan jam, foto dari galeri tidak.</p>' +
+      '<p><b>Sinyal jelek, bagaimana?</b> Catatan tersimpan lebih dulu, foto menyusul. Bila foto gagal terunggah, tekan Coba unggah lagi.</p>' +
+      '<p><b>Salah catat?</b> Catatan yang salah bisa dihapus dari daftar riwayat, dan bisa dipulihkan lewat Tampilkan data yang dihapus.</p>' +
+      '<p><b>Mencetak laporan?</b> Buka formulirnya, tekan Riwayat dan cetak laporan, pilih catatan, lalu Cetak / simpan PDF.</p>' +
+      '<p><b>Lupa kata sandi?</b> Minta admin fasyankes mengatur ulang lewat Kelola pengguna.</p></details>' +
+      '<p class="muted">Butuh bantuan lain? Email <a href="mailto:papkenz25@gmail.com">papkenz25@gmail.com</a>.</p>' +
       '<h3>Ubah nama</h3><label>Nama lengkap</label><input id="ak-nama" value="' + esc(p.nama || '') + '">' +
       '<button type="button" id="ak-simpan-nama">Simpan nama</button><div class="pesan" id="ak-pesan-nama"></div>' +
       '<h3>Ubah kata sandi</h3>' +

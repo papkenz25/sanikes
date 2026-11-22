@@ -138,6 +138,7 @@
 
       async function cetak(x) {
         var jw = x.jawaban || {}, bag = '';
+        var kopH = window.DOK ? await DOK.kop() : '';
         var fotoPer = {}, umum = [];
         if (cfg.foto && window.FOTO && await FOTO.siap()) {
           (await FOTO.ambil(cfg.tabel, x.id)).forEach(function (f) { if (f.butir === '_tempat') umum.push(f); else (fotoPer[f.butir] = fotoPer[f.butir] || []).push(f); });
@@ -153,7 +154,7 @@
         w.id = 'ck-cetak';
         w.innerHTML = '<div class="noprint" style="margin:12px 0"><button type="button" id="ck-print" style="width:auto;padding:10px 20px">Cetak / simpan PDF</button> ' +
           '<button type="button" id="ck-tutup" style="width:auto;padding:10px 20px;background:#666">Tutup</button></div>' +
-          '<h3>' + esc(cfg.judulCetak || cfg.judul) + '</h3><p>' + esc((App.profil.fasyankes && App.profil.fasyankes.nama) || '') + '<br>' +
+          kopH + '<h3>' + esc(cfg.judulCetak || cfg.judul) + '</h3><p>' + esc((App.profil.fasyankes && App.profil.fasyankes.nama) || '') + '<br>' +
           (x.jenis_objek ? 'Jenis tempat: ' + esc(x.jenis_objek) + '<br>' : '') + esc(cfg.lokasiLabel) + ': ' + esc(x.lokasi || '-') + ' · Tanggal: ' + esc(x.tanggal) + '</p>' +
           (function () {
             var o = x.objek_id ? cariObjek(x.objek_id) : null;
@@ -167,7 +168,7 @@
           '<p>' + (x.skor != null && x.batas_skor != null ? 'Skor: <b>' + angka(x.skor) + '</b> (batas ' + x.batas_skor + ') · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') : '') + '</p>' +
           (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(x.batas_perbaikan) + ')' : '') + '</p>' : '') +
           (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') +
-          '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>.................................</p>';
+          (window.DOK ? DOK.tandaTangan() : '<p style="margin-top:32px">Petugas pemeriksa,<br><br><br>.................................</p>');
         $('ck-root').style.display = 'none';
         el.appendChild(w);
         $('ck-print').onclick = function () { window.print(); };

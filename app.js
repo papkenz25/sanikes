@@ -35,6 +35,8 @@ var IKON = {
   k3: '<path d="M12 3l8 3v6c0 4.500-3.200 8-8 9-4.800-1-8-4.500-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   rs: '<rect x="6" y="4" width="12" height="17" rx="2"/><path d="M9 4h6v3H9z"/><path d="M9 14l2 2 4-4"/>',
   pkm: '<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
+  foto: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.500"/>',
+  kunci: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
   kit: '<path d="M14.700 6.300a4 4 0 0 0-5 5L3 18l3 3 6.700-6.700a4 4 0 0 0 5-5l-2.500 2.500-2.500-.5-.5-2.500z"/>'
 };
 function ikon(nama, ukuran) {
@@ -122,7 +124,8 @@ async function masukApp(user) {
   }
   pita.hidden = !App.demo;
   pita.innerHTML = 'Mode demo: semua data adalah contoh dan kembali seperti semula setiap pukul 02.00 WITA. ' +
-    'Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com" style="color:inherit;font-weight:700">papkenz25@gmail.com</a>';
+    'Tertarik memakai SANIKES? Hubungi <a href="mailto:papkenz25@gmail.com" style="color:inherit;font-weight:700">papkenz25@gmail.com</a> ' +
+    '<button type="button" id="pita-beranda" class="kecil" style="width:auto;margin-left:6px;background:#fff;color:#0F6E5C">← Kembali ke beranda</button>';
   var dinkes = p.data.peran === 'dinkes';
   $('info-fasyankes').textContent = p.data.fasyankes ? p.data.fasyankes.nama : (dinkes ? 'Dinas Kesehatan' : 'Admin Papkenz');
   ['modul', 'laporan', 'data'].forEach(function (t) { document.querySelector('[data-tab="' + t + '"]').hidden = dinkes; });
@@ -239,7 +242,7 @@ async function init() {
     });
   });
   document.addEventListener('click', async function (e) {
-    if (!e.target.closest('#tombol-keluar')) return;
+    if (!e.target.closest('#tombol-keluar, #pita-beranda')) return;
     await App.db.auth.signOut();
     App.profil = null; App.demo = false;
     tampil('login');

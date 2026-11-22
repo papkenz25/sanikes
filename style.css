@@ -186,3 +186,12 @@ button.keluar { background:#fff; color:var(--merah); border:1.5px solid var(--me
 .foto-lightbox img { max-width:96vw; max-height:84vh; border-radius:8px; }
 .foto-lightbox span { color:#fff; font-size:12px; opacity:.8; }
 @media print { .foto-lihat { width:140px; break-inside:avoid; } .foto-lihat img { width:140px; height:105px; } }
+
+/* Kop surat pada cetakan dan toast unggah foto */
+.kop-surat{text-align:center;border-bottom:2px solid #000;padding-bottom:6px;margin-bottom:12px}
+.kop-nama{font-size:17px;font-weight:800}
+.kop-alamat{font-size:12px}
+.dok-toast{position:fixed;left:12px;right:12px;bottom:76px;background:#0F6E5C;color:#fff;padding:10px 14px;border-radius:12px;z-index:60;font-size:14px;box-shadow:0 4px 14px rgba(0,0,0,.25)}
+.dok-toast.galat{background:#B3261E}
+.dok-toast .chip{margin-top:6px}
+@media (min-width:900px){.dok-toast{left:auto;right:20px;max-width:360px;bottom:20px}}

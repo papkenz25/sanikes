@@ -37,7 +37,8 @@
     var r = await Promise.all([
       App.db.from('master_checklist').select('*').eq('modul', kat).order('urutan'),
       x.objek_id ? App.db.from('objek_inspeksi').select('*').eq('id', x.objek_id).maybeSingle() : Promise.resolve({ data: null }),
-      (window.FOTO ? FOTO.ambil(TABEL[kat], x.id) : Promise.resolve([]))
+      (window.FOTO ? FOTO.ambil(TABEL[kat], x.id) : Promise.resolve([])),
+      (window.DOK ? DOK.kop(x.fasyankes_id) : Promise.resolve(''))
     ]);
     var soal = r[0].data || [], o = r[1].data, fotoPer = {}, umum = [], jw = x.jawaban || {};
     (r[2] || []).forEach(function (f) { if (f.butir === '_tempat') umum.push(f); else (fotoPer[f.butir] = fotoPer[f.butir] || []).push(f); });
@@ -51,7 +52,7 @@
     }).join('');
     var alamat = o ? [o.alamat, o.desa, o.kecamatan].filter(Boolean).map(esc).join(', ') : '';
     var peta = o && o.lat != null ? ' · <a href="https://www.google.com/maps?q=' + encodeURIComponent(o.lat + ',' + o.lng) + '" target="_blank" rel="noopener">lihat di peta</a>' : '';
-    el.innerHTML = '<div id="il-cetak"><div class="noprint" style="margin:12px 0"><button type="button" id="il-print" style="width:auto;padding:10px 20px">Cetak / simpan PDF</button></div>' +
+    el.innerHTML = '<div id="il-cetak">' + (r[3] || '') + '<div class="noprint" style="margin:12px 0"><button type="button" id="il-print" style="width:auto;padding:10px 20px">Cetak / simpan PDF</button></div>' +
       '<h3>Rincian inspeksi ' + (kat === 'tpm' ? 'tempat pengelolaan pangan' : 'tempat dan fasilitas umum') + '</h3>' +
       '<p><b>' + esc(x.lokasi || (o && o.nama) || '-') + '</b>' + (x.jenis_objek || (o && o.jenis) ? ' · ' + esc(x.jenis_objek || o.jenis) : '') + '<br>' +
       (namaFas ? 'Fasyankes: ' + esc(namaFas) + '<br>' : '') +
@@ -63,7 +64,7 @@
       '<p>' + (x.skor != null ? 'Skor: <b>' + angka(x.skor) + '</b>' + (x.batas_skor != null ? ' (batas ' + x.batas_skor + ')' : '') + ' · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') + '<br>' : '') +
       ya + ' butir sesuai, ' + tdk + ' butir tidak sesuai</p>' +
       (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(tgl(x.batas_perbaikan)) + ')' : '') + '</p>' : '') +
-      (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') + '</div>';
+      (x.catatan ? '<p>Catatan: ' + esc(x.catatan) + '</p>' : '') + (window.DOK ? DOK.tandaTangan() : '') + '</div>';
     $('il-print').onclick = function () { window.print(); };
     el.querySelectorAll('[data-besar-lihat]').forEach(function (im) { im.onclick = function () { FOTO.besar(im.src); }; });
     App.kembali('Daftar inspeksi', balik);
