@@ -283,7 +283,7 @@
   // ===== Pendaftaran checklist =====
   CEK({
     tab: 'tpm_cek', judul: 'Inspeksi tempat pengelolaan pangan (TPP)', judulCetak: 'HASIL INSPEKSI KESEHATAN LINGKUNGAN TEMPAT PENGELOLAAN PANGAN',
-    modul: 'tpm', tabel: 'tpm_inspeksi', kategori: 'tpm', objekKat: 'tpm',
+    modul: 'tpm', tabel: 'tpm_inspeksi', kategori: 'tpm', objekKat: 'tpm', foto: true,
     opsi: [['ya', 'Ya, sesuai'], ['tidak', 'Tidak sesuai'], ['tb', 'Tidak berlaku']],
     lokasi: 'teks', lokasiLabel: 'Nama TPP / dapur', lokasiContoh: 'mis. Instalasi gizi, Kantin karyawan',
     batasKunci: 'batas_skor_tpm', batasDefault: 80,

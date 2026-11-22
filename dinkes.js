@@ -112,13 +112,22 @@
           bar('Hasil uji memenuhi', pUjiF, pUjiF == null ? 'belum ada' : pUjiF + '% (' + p.tdk + ' tidak)', pUjiF != null && pUjiF < 60 ? 'merah' : (pUjiF != null && pUjiF < 80 ? 'kuning' : '')) +
           bar('Inspeksi memenuhi', p.insp ? Math.round((p.insp - p.inspTdk) / p.insp * 100) : 0, p.insp ? (p.insp - p.inspTdk) + '/' + p.insp : 'belum ada', p.inspTdk ? 'kuning' : '') +
           '</div><div class="dk-angka"><div>Limbah B3<b>' + angka(p.kg) + ' kg</b></div><div>Insiden K3<b>' + p.k3 + '</b></div><div>Temuan terbuka<b' + (p.buka ? ' class="merah"' : '') + '>' + p.buka + '</b></div></div>' +
-          '<button type="button" class="chip noprint" style="margin-top:12px" data-lap="' + x.id + '">Lihat laporan bulanan</button></div>';
+          '<button type="button" class="chip noprint" style="margin-top:12px" data-lap="' + x.id + '">Lihat laporan bulanan</button> <button type="button" class="chip noprint" style="margin-top:12px" data-insp="' + x.id + '">Lihat inspeksi</button></div>';
       }).join('') + '<p class="muted" style="margin:8px 0 0;font-size:12px">Penanda cepat: "Perlu perhatian" bila hasil uji memenuhi di bawah 80%, pencatatan IPAL di bawah 60% hari, atau temuan terbuka 5 atau lebih.</p></section>' +
+      '<button type="button" class="noprint" id="dk-insp" style="margin-bottom:8px">Semua inspeksi wilayah (saring kecamatan / desa)</button>' +
       '<button type="button" class="noprint" id="dk-cetak">Cetak rekap wilayah</button>';
     el.innerHTML = h;
 
     $('dk-buka').onclick = function () { window._dkBl = Number($('dk-bl').value); window._dkTh = Number($('dk-th').value); App.tabs.dinkes(el); };
     $('dk-cetak').onclick = function () { window.print(); };
+    var namaFas = {}; fas.forEach(function (x) { namaFas[x.id] = x.nama; });
+    function bukaInsp(daftarId, judul) {
+      INSPEKSI.daftar(el, { ids: daftarId, nama: namaFas, bulan: bl, tahun: th, judul: judul });
+      App.kembali('Rekap wilayah', function () { App.tabs.dinkes(el); });
+      window.scrollTo(0, 0);
+    }
+    $('dk-insp').onclick = function () { bukaInsp(ids, (w.data || {}).nama || 'Wilayah'); };
+    el.querySelectorAll('[data-insp]').forEach(function (b) { b.onclick = function () { bukaInsp([this.dataset.insp], namaFas[this.dataset.insp]); }; });
     el.querySelectorAll('[data-lap]').forEach(function (b) {
       b.onclick = function () {
         App.laporan.terpadu(el, this.dataset.lap, bl, th);

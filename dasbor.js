@@ -244,7 +244,8 @@
     h += panel('Hasil pemeriksaan bulan ini',
       BIDANG_UJI.map(function (b) { return hasilUji(b[1], perBidang[b[0]][0], perBidang[b[0]][1]); }).join('') +
       insp.map(function (b) { return hasilUji('Inspeksi ' + (b[1] === 'TFU' ? 'TFU' : b[1].toLowerCase()), perBidang[b[0]][0], perBidang[b[0]][1]); }).join('') +
-      '<div class="legenda"><span><i style="background:#0F6E5C"></i>Memenuhi</span><span><i style="background:#B3261E"></i>Tidak memenuhi</span></div>') + '</div>';
+      '<div class="legenda"><span><i style="background:#0F6E5C"></i>Memenuhi</span><span><i style="background:#B3261E"></i>Tidak memenuhi</span></div>' +
+      (window.INSPEKSI && p.fasyankes_id ? '<button type="button" class="chip" id="ds-insp" style="margin-top:8px">Lihat rincian inspeksi (tempat, foto, lokasi)</button>' : '')) + '</div>';
 
     // ----- grafik limbah -----
     var seri = [];
@@ -292,6 +293,11 @@
     $('dasbor-root').onclick = async function (e) {
       var t = e.target.closest ? e.target.closest('[data-buka]') : null;
       if (t && App.tabs[t.dataset.buka]) { App.tabs[t.dataset.buka](el); App.kembali('Dasbor', function () { bukaTab('dasbor'); }); window.scrollTo(0, 0); return; }
+      if (e.target.id === 'ds-insp') {
+        var nm = {}; nm[p.fasyankes_id] = (p.fasyankes && p.fasyankes.nama) || '';
+        INSPEKSI.daftar(el, { ids: [p.fasyankes_id], nama: nm, judul: nm[p.fasyankes_id] });
+        App.kembali('Dasbor', function () { bukaTab('dasbor'); }); window.scrollTo(0, 0); return;
+      }
       if (e.target.id === 'ds-atur') {
         $('ds-target').innerHTML = KEGIATAN.filter(function (k) { return k[0] !== 'ipal_harian'; }).map(function (k) {
           return '<label>' + esc(k[1]) + ' (kali per bulan, 0 = tidak dipantau)</label><input type="number" min="0" step="1" data-tg="' + k[0] + '" value="' + (Number(target[k[0]]) || 0) + '">';

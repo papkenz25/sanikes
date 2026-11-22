@@ -109,6 +109,13 @@
         baris('Sanitasi bangunan', ringkasCek(r[7].data || [])) +
         baris('Tempat pengelolaan pangan (TPP)', ringkasCek(r[8].data || [])) +
         baris('Tempat dan fasilitas umum (TFU)', ringkasCek(r[9].data || [])));
+      var tempatDiperiksa = (r[8].data || []).map(function (x) { x._k = 'TPP'; return x; }).concat((r[9].data || []).map(function (x) { x._k = 'TFU/TTU'; return x; }))
+        .sort(function (a, b) { return a.tanggal < b.tanggal ? -1 : 1; });
+      if (tempatDiperiksa.length) {
+        h += '<p style="margin:10px 0 4px"><b>Tempat yang diperiksa bulan ini</b></p>' + tabel(tempatDiperiksa.map(function (x) {
+          return baris(esc(x.lokasi || '-') + ' <span class="muted">(' + x._k + ')</span>', esc(x.tanggal) + (x.skor != null ? ' · skor ' + angka(x.skor, 1) : '') + ' · ' + (x.status === 'memenuhi' ? 'memenuhi' : 'tidak memenuhi'));
+        }).join(''));
+      }
 
       // 6. K3
       var ins = r[10].data || [], ij = {};
