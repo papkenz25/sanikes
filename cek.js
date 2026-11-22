@@ -41,6 +41,8 @@
           (rt.data || []).forEach(function (x) { if (!terakhir[x.objek_id]) terakhir[x.objek_id] = x.tanggal; });
         }
       }
+      var fotoOk = !!(cfg.foto && window.FOTO && await FOTO.siap());
+      var stFoto = {}, widgets = {};
       function cariObjek(id) { return semuaObjek.filter(function (o) { return o.id === id; })[0]; }
       var opsiHtml = cfg.opsi.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
 
@@ -64,6 +66,7 @@
         ? (soal.length
           ? '<label>Tanggal</label><input type="date" id="ck-tgl" value="' + tglLokal(new Date()) + '">' + inJenis + inLok +
             '<p class="muted">' + (cfg.info || '') + (batas != null ? ' Batas laik: ' + batas + '.' : '') + '</p>' +
+            (fotoOk ? '<div class="baris"><b>Foto tempat (tampak depan)</b><div class="foto-wadah" data-foto="_tempat"></div></div>' : '') +
             '<div id="ck-soal"></div><div id="ck-skor" class="info"></div>' +
             (objekOk ? '<label>Pemeriksa</label><input id="ck-pem" value="' + esc(App.profil.nama || '') + '">' +
               '<label>Rekomendasi perbaikan (opsional)</label><input id="ck-rek" placeholder="mis. Sediakan sabun dan air mengalir di toilet">' +
@@ -115,6 +118,7 @@
       }
       function segar() {
         var jw = jawaban(), h = hitung(soal, jw);
+        if (fotoOk) Object.keys(widgets).forEach(function (k) { if (k !== '_tempat') widgets[k].peringatan(jw[k] === 'tidak' && !(stFoto[k] || []).length); });
         $('ck-skor').innerHTML = 'Terjawab ' + Object.keys(jw).length + ' dari ' + soal.length + '.' +
           (h.skor !== null ? '<br>' + (batas != null ? 'Skor: <b>' + angka(h.skor) + '</b> ' + lencana(h.skor >= batas ? 'memenuhi' : 'tidak_memenuhi') : 'Terpenuhi: <b>' + h.ya + ' dari ' + h.total + '</b>') : '');
       }
@@ -123,19 +127,27 @@
         $('ck-soal').innerHTML = soal.map(function (q) {
           var h = q.bagian !== bag ? '<h3>' + esc(q.bagian || '') + '</h3>' : '';
           bag = q.bagian;
-          return h + '<div class="baris">' + esc(q.pertanyaan) + '<select data-q="' + esc(q.kode) + '"><option value="">- pilih -</option>' + opsiHtml + '</select></div>';
+          return h + '<div class="baris">' + esc(q.pertanyaan) + '<select data-q="' + esc(q.kode) + '"><option value="">- pilih -</option>' + opsiHtml + '</select>' + (fotoOk ? '<div class="foto-wadah" data-foto="' + esc(q.kode) + '"></div>' : '') + '</div>';
         }).join('');
         $('ck-soal').onchange = segar;
+        if (fotoOk) el.querySelectorAll('[data-foto]').forEach(function (w) {
+          widgets[w.dataset.foto] = FOTO.pasang(w, stFoto, w.dataset.foto, { maks: w.dataset.foto === '_tempat' ? 1 : 2, onUbah: segar });
+        });
         segar();
       }
 
-      function cetak(x) {
+      async function cetak(x) {
         var jw = x.jawaban || {}, bag = '';
+        var fotoPer = {}, umum = [];
+        if (cfg.foto && window.FOTO && await FOTO.siap()) {
+          (await FOTO.ambil(cfg.tabel, x.id)).forEach(function (f) { if (f.butir === '_tempat') umum.push(f); else (fotoPer[f.butir] = fotoPer[f.butir] || []).push(f); });
+        }
         var isi = soal.map(function (q) {
           var h = q.bagian !== bag ? '<tr><td colspan="2"><b>' + esc(q.bagian || '') + '</b></td></tr>' : '';
           bag = q.bagian;
           var o = cfg.opsi.filter(function (p) { return p[0] === jw[q.kode]; })[0];
-          return h + '<tr><td style="padding:4px 8px;border-bottom:1px solid #ddd">' + esc(q.pertanyaan) + '</td><td style="padding:4px 8px;border-bottom:1px solid #ddd;white-space:nowrap">' + esc(o ? o[1] : '-') + '</td></tr>';
+          return h + '<tr><td style="padding:4px 8px;border-bottom:1px solid #ddd">' + esc(q.pertanyaan) + '</td><td style="padding:4px 8px;border-bottom:1px solid #ddd;white-space:nowrap">' + esc(o ? o[1] : '-') + '</td></tr>' +
+            (fotoPer[q.kode] ? '<tr><td colspan="2" style="padding:4px 8px;border-bottom:1px solid #ddd"><div class="foto-deret">' + FOTO.html(fotoPer[q.kode]) + '</div></td></tr>' : '');
         }).join('');
         var w = document.createElement('div');
         w.id = 'ck-cetak';
@@ -150,6 +162,7 @@
             return (a ? '<p style="margin-top:-8px">Alamat: ' + a + (pj ? '<br>Penanggung jawab: ' + pj : '') + '</p>' : (pj ? '<p style="margin-top:-8px">Penanggung jawab: ' + pj + '</p>' : '')) +
               (x.pemeriksa ? '<p style="margin-top:-8px">Pemeriksa: ' + esc(x.pemeriksa) + '</p>' : '');
           })() +
+          (umum.length ? '<div class="foto-deret"><div style="width:100%"><b>Foto tempat</b></div>' + FOTO.html(umum) + '</div>' : '') +
           '<table style="width:100%;border-collapse:collapse;font-size:13px">' + isi + '</table>' +
           '<p>' + (x.skor != null && x.batas_skor != null ? 'Skor: <b>' + angka(x.skor) + '</b> (batas ' + x.batas_skor + ') · ' + (x.status === 'memenuhi' ? 'MEMENUHI' : 'TIDAK MEMENUHI') : '') + '</p>' +
           (x.rekomendasi ? '<p>Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' (diperbaiki sebelum ' + esc(x.batas_perbaikan) + ')' : '') + '</p>' : '') +
@@ -159,6 +172,8 @@
         el.appendChild(w);
         $('ck-print').onclick = function () { window.print(); };
         $('ck-tutup').onclick = function () { w.remove(); $('ck-root').style.display = ''; };
+        w.querySelectorAll('[data-besar-lihat]').forEach(function (im) { im.onclick = function () { FOTO.besar(im.src); }; });
+        window.scrollTo(0, 0);
       }
 
       async function daftar(pesan) {
@@ -167,6 +182,7 @@
         var res = await q.order('tanggal', { ascending: false }).order('dibuat', { ascending: false }).limit(30);
         if (res.error) { $('ck-daftar').innerHTML = '<div class="info waspada">Gagal memuat.</div>'; return; }
         rows = res.data;
+        var nFoto = (cfg.foto && window.FOTO && await FOTO.siap()) ? await FOTO.jumlah(cfg.tabel, rows.map(function (x) { return x.id; })) : {};
         $('ck-daftar').innerHTML = (pesan ? '<div class="pesan">' + esc(pesan) + '</div>' : '') + (window.KL ? KL.saklar(cfg.tabel) : '') +
           (rows.length ? rows.map(function (x) {
             var jml = 0;
@@ -175,7 +191,8 @@
               (x.skor != null ? ' · skor ' + angka(x.skor) : '') + ' ' + lencana(x.status) +
               '<br><span class="muted">' + esc(x.tanggal) + ' · ' + jml + ' item ' + esc(cfg.hasilTidak || 'tidak sesuai') + (x.catatan ? ' · ' + esc(x.catatan) : '') + '</span>' +
               (x.rekomendasi ? '<br><span class="muted">Rekomendasi: ' + esc(x.rekomendasi) + (x.batas_perbaikan ? ' · perbaiki sebelum ' + esc(x.batas_perbaikan) : '') + '</span>' : '') +
-              '<br><button type="button" class="chip" data-cetak="' + x.id + '">Lihat / cetak</button>' +
+              (nFoto[x.id] ? ' · ' + nFoto[x.id] + ' foto' : '') +
+              '<br><button type="button" class="chip" data-cetak="' + x.id + '">Rincian / cetak</button>' +
               (window.KL ? KL.tombol(x) : '') + '</div>';
           }).join('') : '<p class="muted">Belum ada data.</p>');
       }
@@ -232,9 +249,30 @@
                 parameter: q.pertanyaan, hasil: cfg.hasilTidak || 'Tidak sesuai', uraian: 'belum memenuhi (' + (q.dasar_aturan || '') + ')' };
             }));
           }
-          await App.tabs[cfg.tab](el);
-          $('ck-pesan').textContent = 'Tersimpan' + (h.skor !== null && batas != null ? '. Skor ' + angka(h.skor) : '') +
+          var ringkas = 'Tersimpan' + (h.skor !== null && batas != null ? '. Skor ' + angka(h.skor) : '') +
             (h.tidak.length ? '. ' + h.tidak.length + ' item dicatat sebagai temuan.' : '.');
+          var antre = [];
+          if (fotoOk && !App.demo) Object.keys(stFoto).forEach(function (k) { stFoto[k].forEach(function (f) { antre.push({ butir: k, f: f }); }); });
+          if (!antre.length) { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas; return; }
+
+          // Catatan sudah tersimpan: kunci tombol Simpan agar tidak dobel, lalu unggah foto satu per satu
+          $('ck-simpan').disabled = true;
+          var unggahLagi = async function () {
+            var sisa = [];
+            for (var i = 0; i < antre.length; i++) {
+              $('ck-pesan').textContent = ringkas + ' Mengunggah foto ' + (i + 1) + ' dari ' + antre.length + '...';
+              var u = await FOTO.unggah(cfg.tabel, id, antre[i].butir, antre[i].f);
+              if (!u.ok) sisa.push(antre[i]);
+            }
+            antre = sisa;
+            if (!antre.length) { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas + ' Semua foto terunggah.'; return; }
+            daftar();
+            $('ck-pesan').innerHTML = esc(ringkas) + '<br><span class="lewat">' + antre.length + ' foto belum terunggah (sinyal lemah?). Catatan sudah aman tersimpan.</span><br>' +
+              '<button type="button" class="chip" id="ck-ulang">Coba unggah lagi</button> <button type="button" class="chip" id="ck-lewati">Selesai tanpa foto itu</button>';
+            $('ck-ulang').onclick = unggahLagi;
+            $('ck-lewati').onclick = async function () { await App.tabs[cfg.tab](el); $('ck-pesan').textContent = ringkas + ' ' + antre.length + ' foto tidak diunggah.'; };
+          };
+          await unggahLagi();
         });
       }
       daftar();
@@ -253,7 +291,7 @@
   });
   CEK({
     tab: 'ttu_cek', judul: 'Inspeksi tempat dan fasilitas umum (TFU/TTU)', judulCetak: 'HASIL INSPEKSI KESEHATAN LINGKUNGAN TEMPAT DAN FASILITAS UMUM',
-    modul: 'ttu', tabel: 'ikl_inspeksi', kategori: 'ttu', objekKat: 'ttu',
+    modul: 'ttu', tabel: 'ikl_inspeksi', kategori: 'ttu', objekKat: 'ttu', foto: true,
     jenis: ['Sekolah / madrasah', 'Pondok pesantren', 'Tempat ibadah', 'Pasar', 'Hotel / penginapan', 'Terminal / stasiun / pelabuhan', 'Tempat rekreasi', 'Sarana olahraga / kolam renang', 'Perkantoran', 'Fasilitas kesehatan', 'Lainnya'],
     opsi: [['ya', 'Ya, sesuai'], ['tidak', 'Tidak sesuai'], ['tb', 'Tidak berlaku']],
     lokasi: 'teks', lokasiLabel: 'Nama tempat', lokasiContoh: 'mis. SD Negeri 1, Masjid Raya, Pasar Sentral',
